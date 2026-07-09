@@ -273,6 +273,7 @@ h1, h2, h3 { text-wrap: balance; }
     margin: 0 auto;
     box-shadow: 0 0 0 1px var(--border), 0 8px 40px rgba(30,18,10,0.10);
     background: var(--white);
+    overflow-x: hidden;
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -419,6 +420,7 @@ h1, h2, h3 { text-wrap: balance; }
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    overscroll-behavior-x: contain;
 }
 .filter-row::-webkit-scrollbar { display: none; }
 
