@@ -76,7 +76,7 @@
 html, body {
     height: 100%;
     font-family: var(--font);
-    background: var(--vanilla);
+    background: var(--surface);
     color: var(--text);
     font-size: 16px;
     line-height: 1.5;
@@ -268,6 +268,11 @@ h1, h2, h3 { text-wrap: balance; }
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
+    max-width: 430px;
+    width: 100%;
+    margin: 0 auto;
+    box-shadow: 0 0 0 1px var(--border), 0 8px 40px rgba(30,18,10,0.10);
+    background: var(--white);
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -1196,8 +1201,14 @@ select.edit-input { cursor: pointer; }
 }
 
 @media (min-width: 480px) {
-    .edit-modal { max-width: 520px; margin: auto; border-radius: var(--radius-lg); }
-    .edit-overlay { align-items: center; }
-    .edit-overlay.open .edit-modal { transform: translateY(0) scale(1); }
-    .edit-modal::before { display: none; }
+    .edit-overlay {
+        align-items: flex-end;
+        max-width: 430px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        width: 100%;
+    }
+    .edit-modal { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .edit-modal::before { display: block; }
 }
