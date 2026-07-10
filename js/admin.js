@@ -199,7 +199,7 @@ async function loadOrders() {
 function _renderOrders() {
     const listEl   = document.getElementById('orders-list');
     const filtered = _currentFilter === 'all'
-        ? _orders
+        ? _orders.filter(o => o.status !== 'delivered')
         : _orders.filter(o => o.status === _currentFilter);
 
     _updateFilterCounts();
@@ -298,7 +298,8 @@ function _renderOrderCard(order) {
 }
 
 function _updateFilterCounts() {
-    const counts = { all: _orders.length, pending: 0, confirmed: 0, paid: 0, delivered: 0 };
+    const counts = { all: 0, pending: 0, confirmed: 0, paid: 0, delivered: 0 };
+    _orders.forEach(o => { if (o.status !== 'delivered') counts.all++; });
     _orders.forEach(o => {
         if (o.status in counts) counts[o.status]++;
     });
