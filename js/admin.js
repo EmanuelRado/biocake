@@ -286,7 +286,7 @@ function _renderOrderCard(order) {
 
     <div class="order-actions">
         ${nextSt
-            ? `<button class="btn-advance" data-order-id="${order.id}" data-next-status="${nextSt}">${NEXT_LABEL[order.status]}</button>`
+            ? `<button class="btn-advance${nextSt === 'delivered' ? ' btn-advance-outline' : ''}" data-order-id="${order.id}" data-next-status="${nextSt}">${NEXT_LABEL[order.status]}</button>`
             : '<span class="delivered-final">✓ Finalizată</span>'
         }
         <a href="https://wa.me/${waPhone}?text=${waText}"
