@@ -18,16 +18,44 @@ const STATUS_LABEL = {
 const NEXT_STATUS = {
     pending: 'confirmed', confirmed: 'paid', paid: 'delivered',
 };
+
+/* ── Iconuri line monocrome (stroke = currentColor) ──── */
+const ICON_PATHS = {
+    check:     '<path d="M20 6 9 17l-5-5"/>',
+    card:      '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+    truck:     '<path d="M14 17V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h1"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-1"/><path d="M9 18h6"/><circle cx="6.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/>',
+    calendar:  '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    pin:       '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    phone:     '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/>',
+    message:   '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
+    cake:      '<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/>',
+    pie:       '<path d="M12 3a9 9 0 0 0-9 9h18a9 9 0 0 0-9-9Z"/><path d="M3 12v3a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-3"/>',
+    gift:      '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+    leaf:      '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+    clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+};
+function icon(name, size = 16) {
+    const p = ICON_PATHS[name];
+    if (!p) return '';
+    return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+
 const NEXT_LABEL = {
-    pending: '✓ Confirmă Comanda',
-    confirmed: '💳 Marchează Plătit',
-    paid: '🚚 Marchează Livrat',
+    pending:   `${icon('check')} Confirmă Comanda`,
+    confirmed: `${icon('card')} Marchează Plătit`,
+    paid:      `${icon('truck')} Marchează Livrat`,
 };
 const CATEGORY_LABELS = {
-    'torturi-clasice': '🎂 Torturi Clasice',
-    'prajituri':       '🥧 Prăjituri',
-    'office-box':      '🎁 Office Box',
-    'vegan-raw':       '🌱 Vegan & Raw',
+    'torturi-clasice': 'Torturi Clasice',
+    'prajituri':       'Prăjituri',
+    'office-box':      'Office Box',
+    'vegan-raw':       'Vegan & Raw',
+};
+const CATEGORY_ICONS = {
+    'torturi-clasice': 'cake',
+    'prajituri':       'pie',
+    'office-box':      'gift',
+    'vegan-raw':       'leaf',
 };
 
 /* ── Init ────────────────────────────────────────────── */
@@ -271,10 +299,10 @@ function _renderOrderCard(order) {
     </div>
 
     <div class="order-meta">
-        <div class="meta-row">📅 <strong>${dateStr}</strong> · ${zone}</div>
-        <div class="meta-row">📍 ${_esc(order.delivery_address || '—')}</div>
-        <div class="meta-row">📞 <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
-        ${order.notes ? `<div class="meta-row notes">💬 ${_esc(order.notes)}</div>` : ''}
+        <div class="meta-row">${icon('calendar')} <strong>${dateStr}</strong> · ${zone}</div>
+        <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
+        <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
+        ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
     </div>
 
     <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
@@ -287,7 +315,7 @@ function _renderOrderCard(order) {
     <div class="order-actions">
         ${nextSt
             ? `<button class="btn-advance${nextSt === 'delivered' ? ' btn-advance-outline' : ''}" data-order-id="${order.id}" data-next-status="${nextSt}">${NEXT_LABEL[order.status]}</button>`
-            : '<span class="delivered-final">✓ Finalizată</span>'
+            : `<span class="delivered-final">${icon('check')} Finalizată</span>`
         }
         <a href="https://wa.me/${waPhone}?text=${waText}"
            target="_blank" rel="noopener" class="btn-wa" aria-label="Contactează pe WhatsApp">
@@ -391,12 +419,12 @@ function _renderProducts() {
     let html = '';
     order.forEach(cat => {
         const label = CATEGORY_LABELS[cat] || cat;
-        html += `<div class="product-category-header">${label}</div>`;
+        html += `<div class="product-category-header">${icon(CATEGORY_ICONS[cat] || 'cake')} ${label}</div>`;
         groups[cat].forEach(p => {
             const mainImg = p.images && p.images[0] ? p.images[0] : null;
             const thumb = mainImg
                 ? `<img src="${_esc(mainImg)}" alt="${_esc(p.name)}" loading="lazy" class="product-thumb-img">`
-                : `<span class="product-emoji-fallback" aria-hidden="true">${_esc(p.emoji) || '🍰'}</span>`;
+                : `<span class="product-emoji-fallback" aria-hidden="true">${icon('cake', 22)}</span>`;
 
             html += `
 <div class="product-row ${p.active ? '' : 'inactive'}" data-id="${p.id}">
@@ -533,10 +561,10 @@ function _renderEditForm(p) {
     <div class="edit-field">
         <label class="edit-label" for="edit-category">Categorie</label>
         <select class="edit-input" id="edit-category">
-            <option value="torturi-clasice" ${p.category === 'torturi-clasice' ? 'selected' : ''}>🎂 Torturi Clasice</option>
-            <option value="prajituri" ${p.category === 'prajituri' ? 'selected' : ''}>🥧 Prăjituri</option>
-            <option value="office-box" ${p.category === 'office-box' ? 'selected' : ''}>🎁 Office Box</option>
-            <option value="vegan-raw" ${p.category === 'vegan-raw' ? 'selected' : ''}>🌱 Vegan &amp; Raw</option>
+            <option value="torturi-clasice" ${p.category === 'torturi-clasice' ? 'selected' : ''}>Torturi Clasice</option>
+            <option value="prajituri" ${p.category === 'prajituri' ? 'selected' : ''}>Prăjituri</option>
+            <option value="office-box" ${p.category === 'office-box' ? 'selected' : ''}>Office Box</option>
+            <option value="vegan-raw" ${p.category === 'vegan-raw' ? 'selected' : ''}>Vegan &amp; Raw</option>
         </select>
     </div>
 
