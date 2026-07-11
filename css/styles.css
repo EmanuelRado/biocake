@@ -1373,6 +1373,12 @@ em { font-family: var(--font-serif); font-style: italic; }
     overflow: hidden;
     background: var(--vanilla);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    /* Promoveaza wrap-ul pe propriul strat GPU: elimina fringe-ul alb de
+       anti-aliasing care apare cand parintele (.modal-panel) e compozitat
+       din cauza `transform` si lasa fundalul alb sa transpara la colturi. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    isolation: isolate;
 }
 
 /* Sliding track */
