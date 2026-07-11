@@ -137,6 +137,91 @@ async function _handleLogout() {
     await window._biocakeSupabase.auth.signOut();
 }
 
+/* ── Notificări push (PWA) ───────────────────────────── */
+const VAPID_PUBLIC_KEY = 'BCdYg5ONGEiWyrTmDTW-hg28n8M0ZTbSije9P59WDjKhr056LSxk-SW4fVpyZqCag0Sz_926T7xSU3-oyKkhokY';
+
+function _urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = atob(base64);
+    const arr     = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+
+function _pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function _initPush() {
+    const btn = document.getElementById('btn-notify');
+    if (!btn) return;
+    if (!_pushSupported()) { btn.hidden = true; return; }
+
+    btn.hidden = false;
+    _reflectNotifyState();
+
+    if (!btn.dataset.bound) {
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', _enablePush);
+    }
+
+    // Dacă permisiunea e deja acordată, ne asigurăm că există un subscription salvat
+    if (Notification.permission === 'granted') {
+        try { await _subscribeAndSave(); } catch (e) { console.warn('push resubscribe:', e); }
+    }
+}
+
+function _reflectNotifyState() {
+    const btn = document.getElementById('btn-notify');
+    if (!btn) return;
+    const granted = Notification.permission === 'granted';
+    btn.classList.toggle('is-active', granted);
+    btn.title = granted ? 'Notificări active' : 'Activează notificările';
+    btn.setAttribute('aria-label', btn.title);
+}
+
+async function _enablePush() {
+    if (!_pushSupported()) {
+        alert('Notificările nu sunt suportate pe acest dispozitiv/browser.');
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        alert('Notificările sunt blocate. Activează-le din setările browserului/telefonului pentru acest site.');
+        return;
+    }
+    const perm = await Notification.requestPermission();
+    _reflectNotifyState();
+    if (perm !== 'granted') return;
+    try {
+        await _subscribeAndSave();
+        alert('Notificările sunt active! Vei fi anunțată la fiecare comandă nouă.');
+    } catch (e) {
+        console.error('push subscribe failed:', e);
+        alert('Nu am putut activa notificările. Încearcă din nou.');
+    }
+}
+
+async function _subscribeAndSave() {
+    const reg = await navigator.serviceWorker.ready;
+    let sub   = await reg.pushManager.getSubscription();
+    if (!sub) {
+        sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+    }
+    const json = sub.toJSON();
+    const { error } = await window._biocakeSupabase
+        .from('push_subscriptions')
+        .upsert({
+            endpoint: json.endpoint,
+            p256dh:   json.keys.p256dh,
+            auth:     json.keys.auth,
+        }, { onConflict: 'endpoint' });
+    if (error) throw error;
+}
+
 /* ── Dashboard visibility ────────────────────────────── */
 function _showDashboard() {
     document.getElementById('admin-login').classList.add('hidden');
@@ -144,6 +229,7 @@ function _showDashboard() {
     loadOrders();
     loadProducts();
     _setupRealtime();
+    _initPush();
 }
 
 function _showLogin() {
