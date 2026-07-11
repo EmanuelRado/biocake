@@ -1349,7 +1349,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 520px;
-    max-height: 90vh;
+    max-height: 72vh;
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-xl);
@@ -1735,7 +1735,7 @@ em { font-family: var(--font-serif); font-style: italic; }
 @media (max-width: 560px) {
     .modal-panel { border-radius: var(--radius-md) var(--radius-md) 0 0; }
     .modal-overlay { align-items: flex-end; padding: 0; }
-    .modal-panel { max-height: 92vh; }
+    .modal-panel { max-height: 74vh; }
 }
 
 /* ==========================================================================
