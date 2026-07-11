@@ -227,8 +227,6 @@ function _injectModalHTML() {
     el.setAttribute('aria-label', 'Detalii produs');
     el.innerHTML = `
     <div class="modal-panel" id="modal-panel">
-        <div class="modal-drag-handle" aria-hidden="true"></div>
-
         <!-- Carousel area -->
         <div class="modal-carousel-wrap" id="modal-carousel-wrap">
             <div class="modal-carousel-track" id="modal-carousel-track"></div>

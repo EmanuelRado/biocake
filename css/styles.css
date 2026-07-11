@@ -1736,21 +1736,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     .modal-panel { border-radius: var(--radius-md) var(--radius-md) 0 0; }
     .modal-overlay { align-items: flex-end; padding: 0; }
     .modal-panel { max-height: 92vh; }
-
-    /* Drag handle — indicator vizual swipe */
-    .modal-drag-handle {
-        width: 40px;
-        height: 4px;
-        background: var(--border-strong);
-        border-radius: var(--radius-full);
-        margin: 10px auto 0;
-        flex-shrink: 0;
-    }
 }
-
-/* Ascunde handle pe desktop */
-.modal-drag-handle { display: none; }
-@media (max-width: 560px) { .modal-drag-handle { display: block; } }
 
 /* ==========================================================================
    Modal — Ingredients & Nutritional sections
