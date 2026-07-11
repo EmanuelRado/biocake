@@ -1349,7 +1349,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 520px;
-    max-height: 90vh;
+    max-height: 72vh;
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-xl);
@@ -1367,11 +1367,18 @@ em { font-family: var(--font-serif); font-style: italic; }
    ========================================================================== */
 .modal-carousel-wrap {
     width: 100%;
-    aspect-ratio: 16 / 7;
+    aspect-ratio: 16 / 9;
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
     background: var(--vanilla);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    /* Promoveaza wrap-ul pe propriul strat GPU: elimina fringe-ul alb de
+       anti-aliasing care apare cand parintele (.modal-panel) e compozitat
+       din cauza `transform` si lasa fundalul alb sa transpara la colturi. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    isolation: isolate;
 }
 
 /* Sliding track */
@@ -1734,23 +1741,10 @@ em { font-family: var(--font-serif); font-style: italic; }
 /* Responsive modal */
 @media (max-width: 560px) {
     .modal-panel { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .modal-carousel-wrap { border-radius: var(--radius-md) var(--radius-md) 0 0; }
     .modal-overlay { align-items: flex-end; padding: 0; }
-    .modal-panel { max-height: 92vh; }
-
-    /* Drag handle — indicator vizual swipe */
-    .modal-drag-handle {
-        width: 40px;
-        height: 4px;
-        background: var(--border-strong);
-        border-radius: var(--radius-full);
-        margin: 10px auto 0;
-        flex-shrink: 0;
-    }
+    .modal-panel { max-height: 84vh; }
 }
-
-/* Ascunde handle pe desktop */
-.modal-drag-handle { display: none; }
-@media (max-width: 560px) { .modal-drag-handle { display: block; } }
 
 /* ==========================================================================
    Modal — Ingredients & Nutritional sections

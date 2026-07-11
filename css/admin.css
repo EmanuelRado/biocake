@@ -395,7 +395,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: inline-block;
 }
 
-.tab-icon { font-size: 22px; line-height: 1; }
+.tab-icon { font-size: 22px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 
 .tab-btn:hover        { color: var(--choco); }
 .tab-btn.active       { color: var(--pink); }
@@ -603,12 +603,20 @@ em { font-family: var(--font-serif); font-style: italic; }
 /* Meta rows */
 .order-meta { margin-bottom: 10px; }
 
+/* Iconuri line inline — aliniere pe baseline text */
+.ico {
+    display: inline-block;
+    vertical-align: -0.16em;
+    flex-shrink: 0;
+}
+
 .meta-row {
     font-size: 13px;
     color: var(--text-muted);
     padding: 2px 0;
     line-height: 1.5;
 }
+.meta-row .ico { color: var(--text-light, var(--text-muted)); }
 .meta-row strong { color: var(--text); }
 .meta-row.notes  { color: var(--gold); font-style: italic; }
 
@@ -675,6 +683,19 @@ em { font-family: var(--font-serif); font-style: italic; }
 .btn-advance:active        { transform: translateY(0); }
 .btn-advance:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 
+.btn-advance-outline {
+    background: transparent;
+    color: var(--choco);
+    border: 1.5px solid var(--choco);
+    box-shadow: none;
+}
+.btn-advance-outline:hover {
+    background: var(--choco);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(61, 32, 20, 0.18);
+}
+
 .delivered-final {
     flex: 1;
     display: flex;
@@ -721,6 +742,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     padding: 18px 4px 8px;
 }
 .product-category-header:first-child { padding-top: 8px; }
+.product-category-header .ico { width: 14px; height: 14px; vertical-align: -0.15em; margin-right: 3px; }
 
 .product-row {
     background: var(--white);
@@ -756,9 +778,12 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: block;
 }
 .product-emoji-fallback {
-    font-size: 28px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
 }
+.product-emoji-fallback .ico { vertical-align: 0; }
 
 /* Edit button — pencil icon */
 .btn-edit-product {
