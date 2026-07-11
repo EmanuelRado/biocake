@@ -1372,6 +1372,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     position: relative;
     overflow: hidden;
     background: var(--vanilla);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 /* Sliding track */
@@ -1734,6 +1735,7 @@ em { font-family: var(--font-serif); font-style: italic; }
 /* Responsive modal */
 @media (max-width: 560px) {
     .modal-panel { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .modal-carousel-wrap { border-radius: var(--radius-md) var(--radius-md) 0 0; }
     .modal-overlay { align-items: flex-end; padding: 0; }
     .modal-panel { max-height: 84vh; }
 }
