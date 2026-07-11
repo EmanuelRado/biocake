@@ -156,26 +156,31 @@ function _pushSupported() {
 async function _initPush() {
     const btn = document.getElementById('btn-notify');
     if (!btn) return;
-    if (!_pushSupported()) { btn.hidden = true; return; }
 
+    // Butonul e mereu vizibil după login, ca adminul să aibă un punct de control.
     btn.hidden = false;
-    _reflectNotifyState();
 
     if (!btn.dataset.bound) {
         btn.dataset.bound = '1';
         btn.addEventListener('click', _enablePush);
     }
 
-    // Dacă permisiunea e deja acordată, ne asigurăm că există un subscription salvat
-    if (Notification.permission === 'granted') {
-        try { await _subscribeAndSave(); } catch (e) { console.warn('push resubscribe:', e); }
+    if (_pushSupported()) {
+        _reflectNotifyState();
+        // Dacă permisiunea e deja acordată, ne asigurăm că există un subscription salvat
+        if (Notification.permission === 'granted') {
+            try { await _subscribeAndSave(); } catch (e) { console.warn('push resubscribe:', e); }
+        }
     }
 }
+
+function _isIOS()        { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function _isStandalone() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
 
 function _reflectNotifyState() {
     const btn = document.getElementById('btn-notify');
     if (!btn) return;
-    const granted = Notification.permission === 'granted';
+    const granted = (typeof Notification !== 'undefined') && Notification.permission === 'granted';
     btn.classList.toggle('is-active', granted);
     btn.title = granted ? 'Notificări active' : 'Activează notificările';
     btn.setAttribute('aria-label', btn.title);
@@ -183,7 +188,11 @@ function _reflectNotifyState() {
 
 async function _enablePush() {
     if (!_pushSupported()) {
-        alert('Notificările nu sunt suportate pe acest dispozitiv/browser.');
+        if (_isIOS() && !_isStandalone()) {
+            alert('Pe iPhone, notificările merg doar din aplicația instalată:\n\n1. Apasă Share (pătratul cu săgeată în sus)\n2. Alege „Adaugă la ecranul principal"\n3. Deschide aplicația din acea iconiță\n4. Revino aici și apasă din nou clopoțelul\n\n(Necesită iOS 16.4 sau mai nou.)');
+        } else {
+            alert('Notificările nu sunt suportate pe acest browser/dispozitiv.');
+        }
         return;
     }
     if (Notification.permission === 'denied') {
