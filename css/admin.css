@@ -1291,6 +1291,9 @@ select.edit-input { cursor: pointer; }
 }
 
 /* ── Banner instalare PWA ─────────────────────────────── */
+.pwa-banner[hidden] {
+    display: none !important;
+}
 .pwa-banner {
     position: fixed;
     left: 12px;
@@ -1347,8 +1350,8 @@ select.edit-input { cursor: pointer; }
 .pwa-banner-install:hover { transform: translateY(-2px); }
 .pwa-banner-close {
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1356,7 +1359,11 @@ select.edit-input { cursor: pointer; }
     border: none;
     color: var(--text-muted);
     border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
+.pwa-banner-close svg { pointer-events: none; }
 .pwa-banner-close:hover { background: var(--vanilla); }
 
 /* ── Header actions + buton notificări ────────────────── */

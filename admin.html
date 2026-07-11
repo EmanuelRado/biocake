@@ -211,8 +211,14 @@
     const dismissed    = localStorage.getItem('pwa-banner-dismissed') === '1';
     const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
+    function hideBanner(persist) {
+        if (!banner) return;
+        banner.hidden = true;
+        if (persist) localStorage.setItem('pwa-banner-dismissed', '1');
+    }
+
     function showBanner() {
-        if (isStandalone || dismissed) return;
+        if (!banner || isStandalone || dismissed) return;
         banner.hidden = false;
     }
 
@@ -224,17 +230,18 @@
         showBanner();
     });
 
-    installBtn.addEventListener('click', async () => {
+    installBtn?.addEventListener('click', async () => {
         if (!deferredPrompt) return;
         deferredPrompt.prompt();
         await deferredPrompt.userChoice;
         deferredPrompt = null;
-        banner.hidden = true;
+        hideBanner(true);
     });
 
-    closeBtn.addEventListener('click', () => {
-        banner.hidden = true;
-        localStorage.setItem('pwa-banner-dismissed', '1');
+    closeBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        hideBanner(true);
     });
 
     // iOS Safari: nu are beforeinstallprompt → instrucțiuni manuale
