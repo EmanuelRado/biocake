@@ -208,17 +208,23 @@
     let deferredPrompt = null;
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    const dismissed    = localStorage.getItem('pwa-banner-dismissed') === '1';
     const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    // Bug vechi: X seta localStorage dar bannerul rămânea vizibil → curățăm o dată
+    localStorage.removeItem('pwa-banner-dismissed');
+
+    function isDismissed() {
+        return sessionStorage.getItem('pwa-banner-dismissed') === '1';
+    }
 
     function hideBanner(persist) {
         if (!banner) return;
         banner.hidden = true;
-        if (persist) localStorage.setItem('pwa-banner-dismissed', '1');
+        if (persist) sessionStorage.setItem('pwa-banner-dismissed', '1');
     }
 
     function showBanner() {
-        if (!banner || isStandalone || dismissed) return;
+        if (!banner || isStandalone || isDismissed()) return;
         banner.hidden = false;
     }
 
