@@ -280,7 +280,7 @@ function _injectModalHTML() {
     document.getElementById('modal-nav-next')
         ?.addEventListener('click', () => _goToSlide(_currentSlide + 1));
 
-    // Touch gestures (dismiss ↕ + carousel ↔)
+    // Touch gestures (carousel ↔ — glisarea verticală rămâne scroll nativ)
     _bindPanelGestures(document.getElementById('modal-panel'));
 }
 
@@ -363,7 +363,7 @@ function _updateCarouselState() {
     if (nextBtn) nextBtn.style.opacity = _currentSlide === _totalSlides - 1 ? '0.3' : '1';
 }
 
-/* ── Touch gestures: ↕ dismiss + ↔ carousel ─────────── */
+/* ── Touch gestures: ↔ carousel (fără dismiss vertical) ─ */
 function _bindPanelGestures(panel) {
     let startX = 0, startY = 0, startTime = 0;
     let swipeDir = null; // 'h' | 'v' | null
@@ -395,21 +395,14 @@ function _bindPanelGestures(panel) {
                 const pct  = (dx / track.offsetWidth) * 100;
                 track.style.transform = `translateX(${base + pct}%)`;
             }
-        } else if (swipeDir === 'v') {
-            // Dismiss jos (doar când conținutul e la top și tragem în jos)
-            const body = document.getElementById('modal-body');
-            if (body && body.scrollTop > 0) return;
-            if (dy < 0) return;
-            panel.style.transform = `translateY(${Math.pow(dy, 0.85)}px)`;
         }
+        // Glisarea verticală = scroll nativ în popup (fără dismiss)
     }, { passive: true });
 
     panel.addEventListener('touchend', (e) => {
         const dx       = e.changedTouches[0].clientX - startX;
-        const dy       = e.changedTouches[0].clientY - startY;
         const duration = Date.now() - startTime;
         const velX     = dx / duration;
-        const velY     = dy / duration;
 
         panel.style.transition = '';
         const track = document.getElementById('modal-carousel-track');
@@ -419,13 +412,6 @@ function _bindPanelGestures(panel) {
             if (dx < -50 || velX < -0.3)      _goToSlide(_currentSlide + 1);
             else if (dx > 50 || velX > 0.3)   _goToSlide(_currentSlide - 1);
             else                               _goToSlide(_currentSlide);
-        } else if (swipeDir === 'v') {
-            if (dy > 90 || velY > 0.5) {
-                panel.style.transform = 'translateY(100%)';
-                setTimeout(() => { panel.style.transform = ''; closeProductModal(); }, 280);
-            } else {
-                panel.style.transform = '';
-            }
         }
         swipeDir = null;
     }, { passive: true });
