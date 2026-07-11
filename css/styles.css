@@ -1367,7 +1367,7 @@ em { font-family: var(--font-serif); font-style: italic; }
    ========================================================================== */
 .modal-carousel-wrap {
     width: 100%;
-    aspect-ratio: 16 / 7;
+    aspect-ratio: 16 / 8.4;
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
