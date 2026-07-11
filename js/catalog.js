@@ -58,7 +58,31 @@ function initCatalog() {
     _injectModalHTML();
     renderCatalog('toate');
     bindChips();
+    _bindFilterLinks();
     _bindModalClose();
+}
+
+/** Activează un chip de categorie și randează catalogul pentru acea categorie */
+function applyCatalogFilter(category) {
+    const chips = document.querySelectorAll('#category-chips .chip');
+    let matched = false;
+    chips.forEach(chip => {
+        const chipCat = CHIP_MAP[chip.textContent.trim()] || 'toate';
+        const isMatch = chipCat === category;
+        chip.classList.toggle('chip-active', isMatch);
+        if (isMatch) matched = true;
+    });
+    renderCatalog(matched ? category : 'toate');
+}
+
+/** Link-uri (ex. „Comandă Office Box") care sar în catalog cu un filtru aplicat */
+function _bindFilterLinks() {
+    document.querySelectorAll('[data-catalog-filter]').forEach(link => {
+        link.addEventListener('click', () => {
+            // href="#catalog" se ocupă de scroll; aplicăm filtrul imediat
+            applyCatalogFilter(link.dataset.catalogFilter);
+        });
+    });
 }
 
 function bindChips() {
