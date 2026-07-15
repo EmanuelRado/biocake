@@ -307,8 +307,7 @@ async function loadOrders() {
     const { data, error } = await window._biocakeSupabase
         .from('orders')
         .select('*, order_items(*)')
-        .order('delivery_date', { ascending: true })
-        .order('created_at',    { ascending: false });
+        .order('created_at', { ascending: false });
 
     if (error) {
         listEl.innerHTML = '<div class="error">Nu s-au putut încărca comenzile.</div>';
@@ -788,14 +787,21 @@ function _renderEditForm(p) {
     </div>
 
     <div class="edit-section-title">Imagini produs</div>
+    <p class="edit-hint edit-hint-block">Trage poze aici sau apasă pentru a deschide galeria telefonului</p>
+
+    <div class="image-dropzone" id="image-dropzone" role="button" tabindex="0" aria-label="Adaugă imagini produs">
+        <input type="file" id="image-file-input" accept="image/*" multiple hidden>
+        <div class="image-dropzone-icon" aria-hidden="true">
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+        </div>
+        <p class="image-dropzone-title">Adaugă poze</p>
+        <p class="image-dropzone-sub">Drag &amp; drop · Galerie · JPG, PNG, WebP (max 8 MB)</p>
+        <p class="image-dropzone-status" id="image-upload-status" hidden></p>
+    </div>
 
     <div class="images-editor" id="edit-images-list">${imgRows}</div>
-    <button type="button" class="btn-add-img" id="btn-add-img">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        Adaugă imagine
-    </button>
 </div>`;
 
     // kcal → kJ auto-calc
@@ -828,14 +834,8 @@ function _renderEditForm(p) {
     // Initial preview render
     _updateWeightPreview();
 
-    // Image list events
-    document.getElementById('btn-add-img').addEventListener('click', () => {
-        const list = document.getElementById('edit-images-list');
-        const idx = list.querySelectorAll('.image-row').length;
-        list.insertAdjacentHTML('beforeend', _imageRowHTML('', idx));
-        _bindImageRowEvents(list.lastElementChild);
-        list.lastElementChild.querySelector('.image-path-input').focus();
-    });
+    // Image upload: dropzone + gallery (mobile file picker)
+    _bindImageDropzone(p);
 
     document.getElementById('edit-images-list').querySelectorAll('.image-row').forEach(row => {
         _bindImageRowEvents(row);
@@ -845,12 +845,23 @@ function _renderEditForm(p) {
     document.getElementById('edit-save').textContent = isNew ? 'Adaugă produs' : 'Salvează modificările';
 }
 
+const PRODUCT_IMAGES_BUCKET = 'product-images';
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
+]);
+
 function _imageRowHTML(src, i) {
-    const preview = src ? `<img src="${_esc(src)}" alt="" class="img-preview-thumb" onerror="this.style.display='none'">` : '';
+    const preview = src
+        ? `<img src="${_esc(src)}" alt="" class="img-preview-thumb" onerror="this.style.display='none'">`
+        : '<span class="img-preview-fallback">📷</span>';
     return `
-<div class="image-row">
+<div class="image-row" data-url="${_esc(src)}">
     <div class="img-thumb-wrap">${preview}</div>
-    <input class="edit-input image-path-input" type="text" value="${_esc(src)}" placeholder="images/products/tort.png" data-index="${i}">
+    <div class="image-row-meta">
+        <span class="image-row-label">Imagine ${i + 1}</span>
+        <span class="image-row-path" title="${_esc(src)}">${_esc(_shortImageLabel(src))}</span>
+    </div>
     <button type="button" class="btn-remove-img" aria-label="Șterge imaginea">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -859,21 +870,150 @@ function _imageRowHTML(src, i) {
 </div>`;
 }
 
+function _shortImageLabel(src) {
+    if (!src) return 'Fără fișier';
+    try {
+        const path = src.includes('/') ? src.split('/').pop() : src;
+        return decodeURIComponent(path).slice(0, 42) || 'Imagine încărcată';
+    } catch (_) {
+        return 'Imagine încărcată';
+    }
+}
+
 function _bindImageRowEvents(row) {
-    const input = row.querySelector('.image-path-input');
-    const thumb = row.querySelector('.img-thumb-wrap');
     const removeBtn = row.querySelector('.btn-remove-img');
-
-    input.addEventListener('input', () => {
-        const val = input.value.trim();
-        thumb.innerHTML = val
-            ? `<img src="${_esc(val)}" alt="" class="img-preview-thumb" onerror="this.style.display='none'">`
-            : '';
-    });
-
     removeBtn.addEventListener('click', () => {
         row.remove();
+        _renumberImageRows();
     });
+}
+
+function _renumberImageRows() {
+    document.querySelectorAll('#edit-images-list .image-row').forEach((row, i) => {
+        const label = row.querySelector('.image-row-label');
+        if (label) label.textContent = `Imagine ${i + 1}`;
+    });
+}
+
+function _bindImageDropzone(product) {
+    const zone = document.getElementById('image-dropzone');
+    const input = document.getElementById('image-file-input');
+    if (!zone || !input) return;
+
+    const openPicker = () => input.click();
+    zone.addEventListener('click', openPicker);
+    zone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPicker();
+        }
+    });
+
+    input.addEventListener('change', () => {
+        const files = Array.from(input.files || []);
+        input.value = '';
+        if (files.length) _uploadProductImages(files, product);
+    });
+
+    zone.addEventListener('dragenter', (e) => { e.preventDefault(); zone.classList.add('is-dragover'); });
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('is-dragover'); });
+    zone.addEventListener('dragleave', (e) => {
+        if (!zone.contains(e.relatedTarget)) zone.classList.remove('is-dragover');
+    });
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('is-dragover');
+        const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/') || ALLOWED_IMAGE_TYPES.has(f.type));
+        if (files.length) _uploadProductImages(files, product);
+    });
+}
+
+function _setImageUploadStatus(msg, isError) {
+    const el = document.getElementById('image-upload-status');
+    if (!el) return;
+    if (!msg) {
+        el.hidden = true;
+        el.textContent = '';
+        el.classList.remove('is-error');
+        return;
+    }
+    el.hidden = false;
+    el.textContent = msg;
+    el.classList.toggle('is-error', !!isError);
+}
+
+async function _uploadProductImages(files, product) {
+    const sb = window._biocakeSupabase;
+    if (!sb) {
+        _setImageUploadStatus('Supabase nu este disponibil.', true);
+        return;
+    }
+
+    const folder = (product?.slug || product?.id || _editProductId || 'temp')
+        .toString()
+        .replace(/[^a-zA-Z0-9_-]/g, '-')
+        .slice(0, 60) || 'temp';
+
+    _setImageUploadStatus(`Se încarcă ${files.length} ${files.length === 1 ? 'imagine' : 'imagini'}…`);
+
+    const list = document.getElementById('edit-images-list');
+    let ok = 0;
+    let fail = 0;
+
+    for (const file of files) {
+        if (file.size > MAX_IMAGE_BYTES) {
+            fail++;
+            continue;
+        }
+        const mimeOk = !file.type || ALLOWED_IMAGE_TYPES.has(file.type) || file.type.startsWith('image/');
+        if (!mimeOk) {
+            fail++;
+            continue;
+        }
+
+        const safeName = file.name
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9._-]/g, '-')
+            .replace(/-+/g, '-')
+            .toLowerCase()
+            .slice(0, 80) || 'imagine.jpg';
+        const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+
+        const { error } = await sb.storage
+            .from(PRODUCT_IMAGES_BUCKET)
+            .upload(path, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type || 'image/jpeg',
+            });
+
+        if (error) {
+            console.error('[upload]', error);
+            fail++;
+            continue;
+        }
+
+        const { data } = sb.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path);
+        const publicUrl = data?.publicUrl;
+        if (!publicUrl) {
+            fail++;
+            continue;
+        }
+
+        const idx = list.querySelectorAll('.image-row').length;
+        list.insertAdjacentHTML('beforeend', _imageRowHTML(publicUrl, idx));
+        _bindImageRowEvents(list.lastElementChild);
+        ok++;
+    }
+
+    if (ok && !fail) {
+        _setImageUploadStatus(ok === 1 ? 'Imagine adăugată.' : `${ok} imagini adăugate.`);
+        setTimeout(() => _setImageUploadStatus(''), 2500);
+    } else if (ok && fail) {
+        _setImageUploadStatus(`${ok} OK, ${fail} eșuate (tip/size invalid sau eroare upload).`, true);
+    } else {
+        _setImageUploadStatus('Nu s-a putut încărca nicio imagine. Verifică tipul (JPG/PNG/WebP) și mărimea (max 8 MB).', true);
+    }
 }
 
 function _updateWeightPreview() {
@@ -924,8 +1064,8 @@ async function _saveProduct() {
     const active       = document.getElementById('edit-active').checked;
 
     const images = Array.from(
-        document.querySelectorAll('#edit-images-list .image-path-input')
-    ).map(inp => inp.value.trim()).filter(Boolean);
+        document.querySelectorAll('#edit-images-list .image-row')
+    ).map(row => (row.dataset.url || '').trim()).filter(Boolean);
 
     const nutritional = {
         per:           document.getElementById('edit-nutr-per').value.trim() || '100g',

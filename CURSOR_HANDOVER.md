@@ -91,6 +91,19 @@ CREATE TABLE order_items (
 );
 ```
 
+#### Tabela `push_subscriptions` (PWA notificări)
+```sql
+CREATE TABLE push_subscriptions (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    endpoint   text        NOT NULL UNIQUE,
+    p256dh     text        NOT NULL,
+    auth       text        NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+-- RLS: authenticated poate INSERT/UPDATE/SELECT propriile abonamente.
+-- Edge Function `notify-new-order` citește cu service_role.
+```
+
 #### Row Level Security (RLS) active:
 *   `products` - Oricine poate citi (`SELECT`) produsele active.
 *   `orders` și `order_items` - Oricine poate introduce (`INSERT`) date, dar citirea (`SELECT`) este interzisă utilizatorilor anonimi din considerente de GDPR/Securitate.
@@ -103,26 +116,42 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
 
 ### Site Public (clienți)
 *   `index.html` - Pagina principală. Conține structura schelet, layout-urile modalului și script-urile JS importate.
-*   `css/styles.css` - Design system premium: culorile brandului (Roz `#FC6D9F`, Ciocolată `#3D2014`), layout 2 carduri/rând mobil, pop-up, swipe vertical dismiss, skeleton shimmer loading, ecran succes.
+*   `css/styles.css` - Design system premium: culorile brandului (Roz `#FC6D9F`, Ciocolată `#3D2014`), layout 2 carduri/rând mobil, modal produs (imagine 16:9, 84vh mobil / 72vh desktop), carusel swipe orizontal, skeleton shimmer loading, ecran succes.
 *   `js/supabase.js` - Inițializează instanța globală `window._biocakeSupabase`.
 *   `js/data.js` - Interfața asincronă de date. `fetchProducts` din Supabase cu fallback local. Mapare `_mapRow` include `maxQty` din coloana `max_qty`. `_weightOptions(product)` generează dinamic opțiunile de greutate per-produs (min → max, pas `step`, cu calcul porții automat ~6.67/kg).
-*   `js/catalog.js` - Randare catalog cu skeleton loading, carusel imagini (swipe orizontal), dismiss modal (swipe vertical). Opțiunile de greutate torturi sunt generate per-produs via `_weightOptions()` — **nu mai sunt hardcodate global**.
+*   `js/catalog.js` - Randare catalog cu skeleton loading, carusel imagini (swipe orizontal), modal fără dismiss la swipe vertical (scroll nativ). Link-uri `data-catalog-filter` (ex. CTA „Comandă Office Box") sar în catalog cu filtru aplicat. Opțiunile de greutate torturi sunt generate per-produs via `_weightOptions()` — **nu mai sunt hardcodate global**.
 *   `js/cart.js` - Logica coșului în `localStorage`.
 *   `js/cart-ui.js` - UI-ul drawer-ului lateral coș.
 *   `js/orders.js` - Trimite comenzile în Supabase.
 *   `js/checkout.js` - Modal fullscreen: colectare date, validare (tel românesc, 48h, no duminică), INSERT în DB, ecran succes + WhatsApp.
 *   `js/app.js` - Punct de intrare (`DOMContentLoaded`).
 
-### Panou Admin (`admin.html`)
-*   `admin.html` - Panou administrator mobil-first. Include shell-ul modalului de editare produs.
-*   `css/admin.css` - Stiluri dedicate: design sistem consistent cu site-ul public, status dots, toggle switches, modal editare slide-up, grid nutrițional, weight preview pills.
+### Panou Admin (`admin.html`) — PWA instalabilă
+*   `admin.html` - Panou administrator mobil-first. Include shell-ul modalului de editare produs, meta PWA/iOS, banner instalare, înregistrare service worker.
+*   `manifest.webmanifest` - PWA manifest (`scope: /admin.html`, `display: standalone`, culori brand).
+*   `sw.js` - Service worker: cache offline shell admin + handler notificări push.
+*   `images/icon-192.png`, `images/icon-512.png`, `images/icon-maskable.png` - Iconițe PWA + `apple-touch-icon`.
+*   `css/admin.css` - Stiluri dedicate: design sistem consistent cu site-ul public, layout lățime telefon și pe desktop, status dots, toggle switches, modal editare slide-up, grid nutrițional, weight preview pills, filter chips scroll orizontal, banner PWA.
 *   `js/admin.js` - Logică completă admin:
     - **Auth**: login/logout Supabase Auth.
-    - **Comenzi**: încărcare + subscripție realtime (`postgres_changes`), filtrare pe status, avansare status (`pending → confirmed → paid → delivered`), format currency `Intl.NumberFormat`.
-    - **Produse**: încărcare cu thumbnailuri din câmpul `images[]`, toggle activ/inactiv, buton editare per-produs.
+    - **Comenzi**: încărcare sortată `created_at DESC` (cele mai noi primele) + subscripție realtime (`postgres_changes`), filtrare pe status, filtrul **„Toate"** exclude comenzile livrate, avansare status (`pending → confirmed → paid → delivered`), buton „Marchează Livrat" cu stil outline, icon WhatsApp pe carduri, format currency `Intl.NumberFormat`.
+    - **Produse**: încărcare cu thumbnailuri din câmpul `images[]` (nu emoji), toggle activ/inactiv, buton editare per-produs.
     - **Modal editare**: toate câmpurile produsului (nume, categorie, preț, unitate, min/step/max greutate, badge, weight_note toggle, descriere, ingrediente, alergeni, declarație nutrițională completă, imagini cu preview live). kJ se calculează automat din kcal. Preview live al greutăților disponibile.
     - **Produs nou**: buton „+ Produs Nou", modal cu slug auto-generat din nume (cu eliminare diacritice).
     - **Ștergere produs**: buton roșu cu confirmare în modal de editare.
+    - **Push notifications**: abonare Web Push (VAPID), salvare în `push_subscriptions`, buton clopoțel în header.
+
+### Supabase Push (notificări la comandă nouă)
+*   `supabase-push.sql` - Tabel `push_subscriptions` + policies RLS (rulat în dashboard).
+*   `supabase/functions/notify-new-order/index.ts` - Edge Function: citește abonamente, trimite push via `web-push`, JWT verification **OFF** (acces webhook).
+*   **Webhook** `notify-new-order-hook`: `public.orders` INSERT → Edge Function `notify-new-order`.
+*   **Prerequisite**: Database Webhooks activate din Supabase → Integrations → Overview (altfel eroare `schema "supabase_functions" does not exist`).
+*   **Secrets Supabase**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+
+### Deployment
+*   `netlify.toml` - Publish static `.`, headere securitate, blocare acces public la `*.md` și `*.sql`.
+*   **GitHub**: `https://github.com/EmanuelRado/biocake` (repo privat, branch `main`).
+*   **Netlify**: auto-deploy la push pe `main` (URL preview temporar până la domeniu `biocake.ro`).
 
 ---
 
@@ -139,6 +168,12 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
     Coloana `weight_note` din tabela `products` este de tip `boolean` (DEFAULT false). La prima implementare a formularului de editare a fost tratat greșit ca text, afișând `"true"` în câmp. *Fix:* câmp schimbat în toggle switch, colectat cu `.checked` în `_saveProduct`.
 5.  **`max_qty` cauzează eroare la SELECT dacă nu există coloana:**
     Dacă `max_qty` este inclus în query-ul SELECT înainte de a rula migrarea SQL, Supabase returnează 400 și produsele nu se încarcă. *Stare curentă:* `max_qty` este **scos din SELECT și din UPDATE** până la rularea migrării. După rularea `ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;`, trebuie re-adăugat în `loadProducts` și în `_saveProduct`.
+6.  **PWA banner nu se închide / nu reapare:**
+    `.pwa-banner` avea `display: flex` care suprascria atributul `[hidden]`. *Fix:* `.pwa-banner[hidden] { display: none !important; }` în `admin.css`. Dismiss-ul folosește **`sessionStorage`** (nu `localStorage`); la load se șterge cheia veche `localStorage` pentru a recupera bannerul după bug-ul anterior.
+7.  **iOS Safari — PWA & push:**
+    Bannerul de instalare pe iOS nu are buton „Instalează" (comportament normal) — afișează instrucțiuni Share → Adaugă pe ecranul principal. Notificările push funcționează **doar în PWA instalată** (iOS 16.4+), nu în Safari tab normal.
+8.  **Webhook Supabase — `supabase_functions` schema:**
+    La crearea webhook-ului înainte de activarea feature-ului, apare eroarea `schema "supabase_functions" does not exist`. *Fix:* activează Database Webhooks din tab-ul Overview (Integrations) înainte de a crea hook-ul.
 
 ---
 
@@ -148,13 +183,23 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
 *   **Fișiere create:** `admin.html`, `css/admin.css`, `js/admin.js`
 *   **Implementat:**
     *   Autentificare email/parolă via Supabase Auth (login/logout).
-    *   Comenzi: listă realtime cu `postgres_changes`, filtrare pe status, avansare status cu un tap.
+    *   Comenzi: listă realtime cu `postgres_changes`, sortare `created_at DESC`, filtrare pe status (filtrul „Toate" exclude livrate), avansare status cu un tap.
     *   Produse: thumbnailuri din `images[0]`, toggle activ/inactiv, buton editare per rând.
     *   Modal editare complet: toate câmpurile produsului, declarație nutrițională, imagini cu preview live.
     *   Creare produs nou (INSERT) cu slug auto-generat.
     *   Ștergere produs cu confirmare.
     *   Weight preview live: generare opțiuni greutate din min/step/max.
-    *   Design mobil-first consistent cu site-ul public.
+    *   Design mobil-first consistent cu site-ul public; lățime fixă telefon și pe desktop.
+
+### ✅ Etapa 5b: PWA Admin + Notificări Push (COMPLETAT — 2026-07-12)
+*   **Fișiere create:** `manifest.webmanifest`, `sw.js`, `supabase-push.sql`, `supabase/functions/notify-new-order/index.ts`, iconițe în `images/`
+*   **Implementat:**
+    *   PWA instalabilă (Android + iOS Add to Home Screen).
+    *   Service worker: cache offline shell + handler push.
+    *   Banner instalare cu dismiss pe sesiune (`sessionStorage`).
+    *   Abonare push din admin (clopoțel) → salvare în `push_subscriptions`.
+    *   Webhook DB: INSERT pe `orders` → Edge Function → push la toate dispozitivele abonate.
+    *   UX iOS documentat (instrucțiuni instalare, push doar în PWA instalată).
 
 *   **⚠️ Migrare SQL pendentă:**
     ```sql
@@ -169,13 +214,14 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
 
 ---
 
-### 🔜 Etapa 6: Securitate, Găzduire & Lansare
+### 🟡 Etapa 6: Securitate, Găzduire & Lansare (ÎN PROGRES)
+*   **Găzduire (parțial — ✅):**
+    *   Repo GitHub privat `EmanuelRado/biocake`, branch `main`.
+    *   Netlify cu auto-deploy la push (`netlify.toml` configurat).
+    *   ⏳ Domeniu custom `biocake.ro` — încă de configurat.
 *   **Securitate (P0 — înainte de lansare):**
     *   Rula `supabase-p0-security.sql` pentru policies RLS stricte.
     *   Validare server-side a statusurilor comenzii (CHECK constraint).
-*   **Găzduire:**
-    *   Deployment pe Netlify sau Vercel din GitHub (CI/CD automat).
-    *   Configurare domeniu custom `biocake.ro`.
 *   **SEO & Performanță:**
     *   Meta tags pentru zona București/Ilfov.
     *   Conversie imagini în format WebP.

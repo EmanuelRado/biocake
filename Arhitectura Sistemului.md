@@ -13,7 +13,8 @@
 | **Styling** | Vanilla CSS (Variabile CSS, Flexbox/Grid) | Design de înaltă fidelitate, animații fluide și control complet asupra esteticii. |
 | **Backend / DB** | Supabase | Oferă bază de date PostgreSQL, API REST generat automat, autentificare și stocare imagini. |
 | **Realtime** | Supabase Realtime Channels | Actualizarea stocurilor și afișarea instantanee a comenzilor noi în panoul administrativ. |
-| **Găzduire** | Netlify sau Vercel (Free tier) | Deployment continuu din GitHub, SSL gratuit, CDN global, performanță maximă. |
+| **Găzduire** | Netlify (Free tier) | ✅ Deploy activ din GitHub (`main`). Domeniu `biocake.ro` — planificat. |
+| **PWA / Push** | Service Worker + Web Push (VAPID) | Admin instalabil pe telefon; notificări la comandă nouă via Edge Function + DB Webhook. |
 | **Plăți** | Netopia Payments | Procesator român pentru încasarea online a avansului de 50% sau generarea de link-uri de plată custom. |
 
 ---
@@ -75,6 +76,14 @@ erDiagram
         numeric line_total
     }
 
+    push_subscriptions {
+        uuid id PK
+        text endpoint "UNIQUE"
+        text p256dh
+        text auth
+        timestamptz created_at
+    }
+
     orders ||--|{ order_items : "contine"
     products ||--|{ order_items : "referentiaza"
 ```
@@ -109,34 +118,33 @@ sequenceDiagram
     Frontend->>Supabase: Verifică stoc & limită zi de livrare
     Supabase-->>Frontend: Confirmare disponibilitate
     Client->>Frontend: Finalizează comandă (Avans 50% Netopia)
-    Frontend->>Supabase: Inserează în COMENZI (status neconfirmat)
-    Note over Client,Frontend: Redirecționare Netopia -> Plată avans 50%
-    Note over Admin,Supabase: Webhook confirmare Netopia -> Schimbă status în "nouă" & Scade stoc
-    Supabase-->>Admin: Notificare Realtime (Comandă Nouă!)
-    Admin->>Supabase: Schimbă status: "În preparare"
-    Admin->>Supabase: Schimbă status: "În livrare"
-    Admin->>Supabase: Schimbă status: "Livrată"
-    Supabase-->>Client: E-mail confirmare status & detalii
+    Frontend->>Supabase: Inserează în COMENZI (status pending)
+    Note over Client,Frontend: Ecran succes + buton WhatsApp (Netopia manual deocamdată)
+    Supabase-->>Admin: Realtime postgres_changes (comandă nouă în listă)
+    Supabase->>Admin: Webhook INSERT → Edge Function notify-new-order → Push notification
+    Admin->>Supabase: Schimbă status: confirmed → paid → delivered
 ```
 
 ---
 
 ## 5. Panoul de Administrare (Dashboard-ul Mamei)
 
-**Status: ✅ IMPLEMENTAT** — `admin.html` + `css/admin.css` + `js/admin.js` (completat 2026-07-08).
+**Status: ✅ IMPLEMENTAT** — `admin.html` + `css/admin.css` + `js/admin.js` + PWA (`manifest.webmanifest`, `sw.js`) — completat 2026-07-12.
 
-Panoul este **mobil-first**, optimizat pentru telefonul mamei, accesat la `/admin.html`.
+Panoul este **mobil-first**, optimizat pentru telefonul mamei, accesat la `/admin.html`. Poate fi **instalat ca aplicație** (PWA) pe Android și iOS (Add to Home Screen). Pe desktop păstrează lățimea de telefon pentru consistență UX.
 
 ### Funcționalități Implementate:
 * **Autentificare**: Login email/parolă via Supabase Auth. Logout.
+* **PWA**: manifest, service worker, cache offline, banner instalare, iconițe dedicate.
+* **Notificări push**: abonare din admin (clopoțel) → `push_subscriptions`; la INSERT pe `orders`, webhook declanșează Edge Function `notify-new-order` care trimite push pe toate dispozitivele abonate. *iOS: push doar în PWA instalată (16.4+).*
 * **Secțiunea Comenzi** (tab 1):
-  * Listă realtime (subscripție `postgres_changes` pe tabela `orders`).
-  * Filtrare pe status: Toate / Așteptare / Confirmate / Plătite / Livrate, cu contoare.
-  * Carduri cu: client, telefon (link tel:), dată livrare, produse comandate, total.
+  * Listă realtime (subscripție `postgres_changes` pe tabela `orders`), sortată `created_at DESC`.
+  * Filtrare pe status: Toate (exclude livrate) / Așteptare / Confirmate / Plătite / Livrate, cu contoare și chips scroll orizontal.
+  * Carduri cu: client, telefon (link tel: + icon WhatsApp), dată livrare, produse comandate, total.
   * Status dots color-coded + badge status.
-  * Buton „avansare" cu un singur tap: `pending → confirmed → paid → delivered`.
+  * Buton „avansare" cu un singur tap: `pending → confirmed → paid → delivered`. „Marchează Livrat" are stil outline.
 * **Secțiunea Produse** (tab 2):
-  * Thumbnail imagine (`images[0]`) cu fallback emoji.
+  * Thumbnail imagine (`images[0]`) — fără emoji ca fallback principal în listă.
   * Toggle activ/inactiv per produs (salvează instant în DB).
   * Buton editare (creion) — deschide modal slide-up complet.
 * **Modal Editare Produs**:
@@ -149,4 +157,5 @@ Panoul este **mobil-first**, optimizat pentru telefonul mamei, accesat la `/admi
 
 ### Funcționalități Planificate (Etapa 6):
 * Secțiunea Calendar (vizualizare comenzi pe zile, blocare zile).
-* Notificări sonore pentru comenzi noi.
+* Integrare Netopia automată (webhook plată).
+* Securitate P0 (`supabase-p0-security.sql`).

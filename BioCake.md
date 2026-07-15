@@ -4,7 +4,7 @@ client: BioCake
 type: Magazin Online Complet
 status: "🟡 În lucru (Etapa 6 — Lansare)"
 date_created: 2026-07-03
-date_modified: 2026-07-08
+date_modified: 2026-07-12
 limba: RO
 locatie: București, România
 telefon: "+40 700 000 000"
@@ -24,9 +24,9 @@ tags:
 | **Tip Proiect** | Magazin Online Complet (Frontend + Backend + Gestiune Stoc) |
 | **Client** | BioCake (Dream project pentru mama lui Emi) |
 | **Locație** | Livrare exclusivă în București (Fără ridicare personală) |
-| **Status** | 🟡 Etape 1-5 complete — Etapa 6 urmează (Securitate + Lansare) |
+| **Status** | 🟡 Etape 1–5 + PWA complete — Etapa 6 parțial (Netlify live, securitate & domeniu rămân) |
 | **Data creare** | 2026-07-03 |
-| **Ultima actualizare** | 2026-07-08 |
+| **Ultima actualizare** | 2026-07-12 |
 
 ---
 
@@ -118,7 +118,25 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Detalii Livrare**: Comandă min. 48h în avans. București (20 RON, gratuită >250 RON), Ilfov (40 RON, gratuită >600 RON).
 - [x] **Design System**: Etapa 1 finalizată — HTML/CSS/JS complet, premium redesign aplicat.
 - [x] **Concept Office Box**: Definit — 6/12/18/24 buc, mix sau sortiment unic, tradiție românească de birou.
-- [x] **Panou Admin**: `admin.html` complet — comenzi realtime, editare produse, creare/ștergere, declarație nutrițională.
-- [ ] **Migrare SQL `max_qty`**: `ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;`
-- [ ] **Securitate P0**: Rulare `supabase-p0-security.sql` înainte de lansare.
-- [ ] **Deployment**: GitHub → Netlify/Vercel + domeniu `biocake.ro`.
+- [x] **Panou Admin**: `admin.html` — PWA instalabilă, comenzi realtime, editare/creare/ștergere produse, notificări push la comandă nouă.
+- [x] **PWA Admin**: manifest, service worker, iconițe, banner instalare, abonare push (Android + iOS 16.4+ instalat pe ecran).
+- [x] **Deployment staging**: GitHub (`EmanuelRado/biocake`, privat) → Netlify cu auto-deploy din `main`.
+- [ ] **Migrare SQL `max_qty`**: `ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;` — apoi re-adaugă coloana în SELECT/UPDATE din `admin.js`.
+- [ ] **Securitate P0**: Rulare `supabase-p0-security.sql` înainte de lansare publică.
+- [ ] **Domeniu producție**: `biocake.ro` → Netlify (înlocuiește URL-ul temporar de preview).
+
+---
+
+## 🛠️ Probleme Identificate & Corecții (Bugs)
+
+- [x] **Buton Produs Activ**: Apare ca un checkbox clasic, nu funcționează checkbox-ul stilizat creat de Cursor. *(Notat pe 08.07.2026)* ✅ 2026-07-13
+- [x] **Opțiuni Greutate Torturi**: Nu există opțiuni pentru selectarea greutății la torturi (1.2kg, 1.8kg, 2.4kg, etc.). *(Notat pe 08.07.2026)* ✅ 2026-07-13
+- [x] **Greutate Aproximativă**: Câmpul apare completat cu `true` pentru torturi (trebuie verificat dacă activează greșit notificarea de marjă de 100g). *(Notat pe 08.07.2026)* ✅ 2026-07-13
+
+---
+
+## 🔮 Idei de Viitor & Optimizări (Backlog)
+
+- [ ] **Conturi Clienți / Autofill**: Analizarea posibilității de creare cont sau implementarea unei funcții de autofill pentru următoarele comenzi (cu scopul colectării datelor de marketing și simplificării checkout-ului). *(Notat pe 10.07.2026)*
+- [x] **Aplicație Admin dedicată**: Transformarea panoului de administrare într-o aplicație de sine stătătoare (PWA dedicat / Aplicație Mobilă). *(Notat pe 10.07.2026)* ✅ 2026-07-13
+

@@ -21,6 +21,7 @@ gantt
     Etapa 4: Coș de Cumpărături & Checkout  :done, 2026-07-16, 5d
     section Admin Panel
     Etapa 5: Panou Admin (Pentru Mama)      :done, 2026-07-08, 1d
+    Etapa 5b: PWA Admin + Push              :done, 2026-07-12, 1d
     section Launch
     Etapa 6: Securitate, SEO & Lansare      :active, 2026-07-09, 5d
 ```
@@ -79,11 +80,11 @@ gantt
 ### ✅ Etapa 5: Panoul de Administrare "Admin-Friendly" 📱 — COMPLETAT (2026-07-08)
 * **Autentificare Admin**: Login email/parolă via Supabase Auth. Logout în header.
 * **Tab Comenzi**:
-  - Listă realtime cu subscripție `postgres_changes`.
-  - Filtrare pe status cu contoare live.
+  - Listă realtime cu subscripție `postgres_changes`, sortare `created_at DESC`.
+  - Filtrare pe status cu contoare live; filtrul „Toate" exclude comenzile livrate.
   - Carduri cu toate detaliile comenzii + buton avansare status cu un tap.
 * **Tab Produse**:
-  - Thumbnailuri din `images[0]` (fallback emoji).
+  - Thumbnailuri din `images[0]` (nu emoji în listă).
   - Toggle activ/inactiv instant.
   - Modal editare complet: toate câmpurile produsului (preț, descriere, ingrediente, alergeni, declarație nutrițională, imagini cu preview, greutăți disponibile).
   - Creare produs nou cu slug auto-generat.
@@ -94,12 +95,28 @@ gantt
   ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;
   ```
 
-### Etapa 6: Securitate, Găzduire & Lansare 🚀
+### ✅ Etapa 5b: PWA Admin + Notificări Push 🔔 — COMPLETAT (2026-07-12)
+* **PWA instalabilă**: `manifest.webmanifest`, `sw.js`, iconițe 192/512/maskable, meta iOS.
+* **Offline**: service worker cache-uiește shell-ul admin.
+* **Banner instalare**: hint „Adaugă pe ecranul principal" (Android: buton Instalează; iOS: instrucțiuni Share).
+* **Push la comandă nouă**:
+  1. Admin activează clopoțelul → abonament salvat în `push_subscriptions`.
+  2. Client plasează comandă → INSERT în `orders`.
+  3. Database Webhook → Edge Function `notify-new-order` → push pe toate dispozitivele.
+* **Setup Supabase** (manual în dashboard):
+  - Rulează `supabase-push.sql`.
+  - Deploy Edge Function + secrets VAPID.
+  - Activează Database Webhooks (Overview) → creează hook pe `orders` INSERT.
+* **Fișiere**: `manifest.webmanifest`, `sw.js`, `supabase-push.sql`, `supabase/functions/notify-new-order/index.ts`
+
+### 🟡 Etapa 6: Securitate, Găzduire & Lansare 🚀 (ÎN PROGRES)
+* **Găzduire (parțial — ✅)**:
+  - Repo GitHub privat `EmanuelRado/biocake`, branch `main`.
+  - Netlify cu auto-deploy (`netlify.toml`).
+  - ⏳ Domeniu `biocake.ro`.
 * **Securitate pre-lansare (P0)**:
   - Rularea `supabase-p0-security.sql` (policies RLS stricte bazate pe `is_admin()`, column-level grants, CHECK constraint statusuri).
-  - Migrarea coloanei `max_qty` (vezi mai sus).
-* **Deployment**: Conectarea folderului la GitHub și deployment pe Netlify sau Vercel (CI/CD automat, SSL gratuit).
-* **Configurare domeniu**: `biocake.ro` → Netlify/Vercel.
+  - Migrarea coloanei `max_qty` (vezi Etapa 5).
 * **Audit Tehnic & SEO**:
   - Meta tags descriptive pentru zona București/Ilfov.
   - Conversie imagini în WebP pentru viteză pe 3G/4G mobil.
