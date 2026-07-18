@@ -483,7 +483,7 @@ async function loadProducts() {
 
     const { data, error } = await window._biocakeSupabase
         .from('products')
-        .select('id, slug, name, category, price, unit, min_qty, step, description, badge, weight_note, ingredients, allergens, images, nutritional, active, emoji, bg')
+        .select('id, slug, name, category, price, unit, min_qty, step, max_qty, description, badge, weight_note, ingredients, allergens, images, nutritional, active, emoji, bg')
         .order('category')
         .order('name');
 
@@ -1055,6 +1055,7 @@ async function _saveProduct() {
     const unit         = document.getElementById('edit-unit').value;
     const min_qty      = parseFloat(document.getElementById('edit-min-qty').value) || 1;
     const step         = parseFloat(document.getElementById('edit-step').value) || 1;
+    const max_qty      = parseFloat(document.getElementById('edit-max-qty')?.value) || 2.4;
     const badge        = document.getElementById('edit-badge').value.trim() || null;
     const weight_note  = document.getElementById('edit-weight-note').checked;
     const description  = document.getElementById('edit-description').value.trim();
@@ -1080,7 +1081,7 @@ async function _saveProduct() {
         salt:          parseFloat(document.getElementById('edit-nutr-salt').value) || 0,
     };
 
-    const patch = { name, category, price, unit, min_qty, step, badge, weight_note, description, ingredients, allergens, images, nutritional, active };
+    const patch = { name, category, price, unit, min_qty, step, max_qty, badge, weight_note, description, ingredients, allergens, images, nutritional, active };
 
     const sb = window._biocakeSupabase;
     let savedId = _editProductId;

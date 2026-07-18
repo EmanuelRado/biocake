@@ -13,7 +13,7 @@
 | **Styling** | Vanilla CSS (Variabile CSS, Flexbox/Grid) | Design de înaltă fidelitate, animații fluide și control complet asupra esteticii. |
 | **Backend / DB** | Supabase | Oferă bază de date PostgreSQL, API REST generat automat, autentificare și stocare imagini. |
 | **Realtime** | Supabase Realtime Channels | Actualizarea stocurilor și afișarea instantanee a comenzilor noi în panoul administrativ. |
-| **Găzduire** | Netlify (Free tier) | ✅ Deploy activ din GitHub (`main`). Domeniu `biocake.ro` — planificat. |
+| **Găzduire** | Netlify (Free tier) | ✅ Deploy din GitHub (`main`). Domeniu live: `https://biocake.ro`. |
 | **PWA / Push** | Service Worker + Web Push (VAPID) | Admin instalabil pe telefon; notificări la comandă nouă via Edge Function + DB Webhook. |
 | **Plăți** | Netopia Payments | Procesator român pentru încasarea online a avansului de 50% sau generarea de link-uri de plată custom. |
 

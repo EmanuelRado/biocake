@@ -32,7 +32,7 @@ Apoi deschide în browser:
 
 - **GitHub**: repo privat `EmanuelRado/biocake`, branch `main`
 - **Netlify**: auto-deploy la push (`netlify.toml`)
-- **Domeniu planificat**: `biocake.ro`
+- **Domeniu live**: https://biocake.ro
 
 ## Setup notificări push (Supabase)
 

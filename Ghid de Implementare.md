@@ -110,14 +110,18 @@ gantt
 * **Fișiere**: `manifest.webmanifest`, `sw.js`, `supabase-push.sql`, `supabase/functions/notify-new-order/index.ts`
 
 ### 🟡 Etapa 6: Securitate, Găzduire & Lansare 🚀 (ÎN PROGRES)
-* **Găzduire (parțial — ✅)**:
+* **Găzduire (✅)**:
   - Repo GitHub privat `EmanuelRado/biocake`, branch `main`.
   - Netlify cu auto-deploy (`netlify.toml`).
-  - ⏳ Domeniu `biocake.ro`.
-* **Securitate pre-lansare (P0)**:
-  - Rularea `supabase-p0-security.sql` (policies RLS stricte bazate pe `is_admin()`, column-level grants, CHECK constraint statusuri).
-  - Migrarea coloanei `max_qty` (vezi Etapa 5).
-* **Audit Tehnic & SEO**:
+  - Domeniu `https://biocake.ro` — Netlify DNS (nsone), live 2026-07-18.
+* **Securitate pre-lansare (P0) ✅ 2026-07-18**:
+  - `is_admin()` = email `admin@biocake.ro`.
+  - RLS pe comenzi, produse (CRUD), push_subscriptions, storage imagini.
+  - UPDATE orders doar pe `status`; products pe coloanele din admin.
+  - CHECK constraint statusuri: pending | confirmed | paid | delivered.
+  - Fișier: `supabase-p0-security.sql` (aplicat pe Supabase).
+* **`max_qty` ✅**: coloană în DB + legată în `admin.js`.
+* **Audit Tehnic & SEO** (rămâne):
   - Meta tags descriptive pentru zona București/Ilfov.
   - Conversie imagini în WebP pentru viteză pe 3G/4G mobil.
   - Audit Lighthouse (target: >90 pe mobil).

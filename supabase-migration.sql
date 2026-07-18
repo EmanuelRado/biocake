@@ -256,6 +256,20 @@ CREATE POLICY "products_admin_update" ON products
     USING (true)
     WITH CHECK (true);
 
+-- ── Admin: creare produse noi ───────────────────────────────────────────────
+DROP POLICY IF EXISTS "products_admin_insert" ON products;
+CREATE POLICY "products_admin_insert" ON products
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+-- ── Admin: ștergere produse ────────────────────────────────────────────────
+DROP POLICY IF EXISTS "products_admin_delete" ON products;
+CREATE POLICY "products_admin_delete" ON products
+    FOR DELETE
+    TO authenticated
+    USING (true);
+
 -- ── Admin: citire order_items ──────────────────────────────────────────────
 DROP POLICY IF EXISTS "order_items_admin_read" ON order_items;
 CREATE POLICY "order_items_admin_read" ON order_items

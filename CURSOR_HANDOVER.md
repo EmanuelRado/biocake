@@ -42,7 +42,7 @@ CREATE TABLE products (
     unit         text        NOT NULL,   -- 'kg' | 'buc' | 'cutie' | 'portie'
     min_qty      numeric(5,2) DEFAULT 1,
     step         numeric(5,2) DEFAULT 1,
-    max_qty      numeric(5,2) DEFAULT 2.4, -- ⚠️ Necesită migrare: ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;
+    max_qty      numeric(5,2) DEFAULT 2.4, -- ✅ prezent în DB + legat în admin.js
     description  text,
     badge        text,
     weight_note  boolean     DEFAULT false, -- afișează nota ±100g la clienți
@@ -151,7 +151,7 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
 ### Deployment
 *   `netlify.toml` - Publish static `.`, headere securitate, blocare acces public la `*.md` și `*.sql`.
 *   **GitHub**: `https://github.com/EmanuelRado/biocake` (repo privat, branch `main`).
-*   **Netlify**: auto-deploy la push pe `main` (URL preview temporar până la domeniu `biocake.ro`).
+*   **Netlify**: auto-deploy la push pe `main`. Domeniu live: `https://biocake.ro` (Netlify DNS).
 
 ---
 
@@ -166,8 +166,8 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
     Input-ul `<input type="checkbox">` din modal nu avea `class="toggle-input"`, deci CSS-ul `.toggle-input { display: none }` nu se aplica și apărea checkbox clasic de browser. *Fix:* adăugat `class="toggle-input"` la toate checkbox-urile din `_renderEditForm`.
 4.  **`weight_note` este `boolean`, nu text:**
     Coloana `weight_note` din tabela `products` este de tip `boolean` (DEFAULT false). La prima implementare a formularului de editare a fost tratat greșit ca text, afișând `"true"` în câmp. *Fix:* câmp schimbat în toggle switch, colectat cu `.checked` în `_saveProduct`.
-5.  **`max_qty` cauzează eroare la SELECT dacă nu există coloana:**
-    Dacă `max_qty` este inclus în query-ul SELECT înainte de a rula migrarea SQL, Supabase returnează 400 și produsele nu se încarcă. *Stare curentă:* `max_qty` este **scos din SELECT și din UPDATE** până la rularea migrării. După rularea `ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;`, trebuie re-adăugat în `loadProducts` și în `_saveProduct`.
+5.  **`max_qty` — rezolvat:**
+    Coloana există în DB. `admin.js` include `max_qty` în SELECT (`loadProducts`) și în UPDATE/INSERT (`_saveProduct`).
 6.  **PWA banner nu se închide / nu reapare:**
     `.pwa-banner` avea `display: flex` care suprascria atributul `[hidden]`. *Fix:* `.pwa-banner[hidden] { display: none !important; }` în `admin.css`. Dismiss-ul folosește **`sessionStorage`** (nu `localStorage`); la load se șterge cheia veche `localStorage` pentru a recupera bannerul după bug-ul anterior.
 7.  **iOS Safari — PWA & push:**
@@ -201,28 +201,27 @@ Proiectul este o aplicație SPA bazată pe HTML, CSS și Vanilla JS. Fișierele 
     *   Webhook DB: INSERT pe `orders` → Edge Function → push la toate dispozitivele abonate.
     *   UX iOS documentat (instrucțiuni instalare, push doar în PWA instalată).
 
-*   **⚠️ Migrare SQL pendentă:**
-    ```sql
-    ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;
-    ```
-    După rulare, adaugă `max_qty` înapoi în SELECT (`loadProducts`) și în `patch` (`_saveProduct`) din `admin.js`.
+*   **✅ `max_qty`:** coloană în DB + SELECT/UPDATE în `admin.js` (2026-07-18).
 
-*   **Probleme de securitate amânate pentru Etapa 6 (pre-lansare):**
-    *   RLS: policies admin bazate pe `is_admin()` (email din JWT).
-    *   Column-level grants: GRANT UPDATE(status) ON orders; GRANT UPDATE(active, ...) ON products.
-    *   Fișierul `supabase-p0-security.sql` este pregătit dar **nerulat**.
+*   **Probleme de securitate — rezolvate în Etapa 6 (P0):**
+    *   RLS: policies admin bazate pe `is_admin()` (email `admin@biocake.ro`).
+    *   Column-level grants pe orders/products.
+    *   Fișierul `supabase-p0-security.sql` — **aplicat**.
 
 ---
 
 ### 🟡 Etapa 6: Securitate, Găzduire & Lansare (ÎN PROGRES)
-*   **Găzduire (parțial — ✅):**
+*   **Găzduire (✅):**
     *   Repo GitHub privat `EmanuelRado/biocake`, branch `main`.
     *   Netlify cu auto-deploy la push (`netlify.toml` configurat).
-    *   ⏳ Domeniu custom `biocake.ro` — încă de configurat.
-*   **Securitate (P0 — înainte de lansare):**
-    *   Rula `supabase-p0-security.sql` pentru policies RLS stricte.
-    *   Validare server-side a statusurilor comenzii (CHECK constraint).
-*   **SEO & Performanță:**
+    *   Domeniu `https://biocake.ro` — Netlify DNS (nsone), live 2026-07-18.
+*   **Securitate P0 (✅ 2026-07-18):**
+    *   `is_admin()` pe JWT email `admin@biocake.ro`.
+    *   RLS: orders / order_items / products (CRUD) / push_subscriptions / storage `product-images`.
+    *   Column grants: orders→`status`; products→câmpurile din formularul admin.
+    *   CHECK `orders_status_valid`.
+    *   Fișier canonic: `supabase-p0-security.sql`.
+*   **SEO & Performanță (rămâne):**
     *   Meta tags pentru zona București/Ilfov.
     *   Conversie imagini în format WebP.
     *   Audit Lighthouse (target: >90 pe mobil).

@@ -4,7 +4,7 @@ client: BioCake
 type: Magazin Online Complet
 status: "🟡 În lucru (Etapa 6 — Lansare)"
 date_created: 2026-07-03
-date_modified: 2026-07-12
+date_modified: 2026-07-18
 limba: RO
 locatie: București, România
 telefon: "+40 700 000 000"
@@ -24,9 +24,10 @@ tags:
 | **Tip Proiect** | Magazin Online Complet (Frontend + Backend + Gestiune Stoc) |
 | **Client** | BioCake (Dream project pentru mama lui Emi) |
 | **Locație** | Livrare exclusivă în București (Fără ridicare personală) |
-| **Status** | 🟡 Etape 1–5 + PWA complete — Etapa 6 parțial (Netlify live, securitate & domeniu rămân) |
+| **Status** | 🟡 Etapa 6: domeniu + P0 securitate done — rămân SEO / conținut |
 | **Data creare** | 2026-07-03 |
-| **Ultima actualizare** | 2026-07-12 |
+| **Ultima actualizare** | 2026-07-18 |
+| **URL live** | https://biocake.ro |
 
 ---
 
@@ -121,9 +122,9 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Panou Admin**: `admin.html` — PWA instalabilă, comenzi realtime, editare/creare/ștergere produse, notificări push la comandă nouă.
 - [x] **PWA Admin**: manifest, service worker, iconițe, banner instalare, abonare push (Android + iOS 16.4+ instalat pe ecran).
 - [x] **Deployment staging**: GitHub (`EmanuelRado/biocake`, privat) → Netlify cu auto-deploy din `main`.
-- [ ] **Migrare SQL `max_qty`**: `ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;` — apoi re-adaugă coloana în SELECT/UPDATE din `admin.js`.
-- [ ] **Securitate P0**: Rulare `supabase-p0-security.sql` înainte de lansare publică.
-- [ ] **Domeniu producție**: `biocake.ro` → Netlify (înlocuiește URL-ul temporar de preview).
+- [x] **Migrare SQL `max_qty`**: coloana există în DB; legată în `admin.js` (SELECT + UPDATE) ✅ 2026-07-18.
+- [x] **Securitate P0**: `is_admin()` pe `admin@biocake.ro` — RLS comenzi/produse/push/storage; CHECK status; grants pe coloane. ✅ 2026-07-18.
+- [x] **Domeniu producție**: `https://biocake.ro` pe Netlify DNS (nsone) — live ✅ 2026-07-18.
 
 ---
 
