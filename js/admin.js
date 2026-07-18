@@ -61,20 +61,32 @@ const CATEGORY_ICONS = {
 /* ── Init ────────────────────────────────────────────── */
 async function initAdmin() {
     const sb = window._biocakeSupabase;
+    let bootstrapped = false;
 
-    // Resolve initial auth state
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-        _showDashboard();
-    } else {
-        _showLogin();
-    }
-
-    // React to auth changes (login / logout)
-    sb.auth.onAuthStateChange((_event, session) => {
-        if (session) _showDashboard();
-        else         _showLogin();
+    // React to auth changes — NU trata orice session=null ca logout
+    // (altfel refresh-ul te deloghează când tokenul e încă în curs de restaurare).
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'INITIAL_SESSION') {
+            bootstrapped = true;
+            if (session) _showDashboard();
+            else _showLogin();
+            return;
+        }
+        if (event === 'SIGNED_OUT') {
+            _showLogin();
+            return;
+        }
+        if (session) {
+            _showDashboard();
+        }
     });
+
+    // Fallback: unele build-uri nu emit INITIAL_SESSION imediat
+    const { data: { session } } = await sb.auth.getSession();
+    if (!bootstrapped) {
+        if (session) _showDashboard();
+        else _showLogin();
+    }
 
     // Login form
     document.getElementById('login-form')

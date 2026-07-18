@@ -2,7 +2,7 @@
  * BioCake Admin — Service Worker
  * PWA installabilă: shell offline + notificări push la comandă nouă.
  */
-const CACHE = 'biocake-admin-v2';
+const CACHE = 'biocake-admin-v3';
 const SHELL = [
     '/admin.html',
     '/css/admin.css',
@@ -53,6 +53,22 @@ self.addEventListener('fetch', (event) => {
 
     // Doar same-origin pentru restul; extern (Supabase, fonts) trece direct la rețea
     if (url.origin !== self.location.origin) return;
+
+    // JS critic (auth): network-first, ca sesiunea/login să nu rămână pe cod vechi din cache
+    if (url.pathname.endsWith('.js')) {
+        event.respondWith(
+            fetch(req)
+                .then((res) => {
+                    if (res && res.status === 200) {
+                        const copy = res.clone();
+                        caches.open(CACHE).then((c) => c.put(req, copy));
+                    }
+                    return res;
+                })
+                .catch(() => caches.match(req))
+        );
+        return;
+    }
 
     // Asset-uri same-origin: stale-while-revalidate
     event.respondWith(
