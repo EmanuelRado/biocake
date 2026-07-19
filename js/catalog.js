@@ -149,8 +149,13 @@ function _skeletonGrid(count) {
 function _productCard(p) {
     const badgeHTML  = p.badge ? `<span class="product-badge">${p.badge}</span>` : '';
     const priceLabel = _formatPrice(p);
+    const gramsNote  = p.unit === 'buc' && p.pieceGrams
+        ? `${p.pieceGrams} g / buc`
+        : null;
     const minNote    = p.unit === 'buc' && p.minQty > 1
-        ? `<span class="product-min-note">min. ${p.minQty} buc</span>`
+        ? `<span class="product-min-note">${gramsNote ? gramsNote + ' · ' : ''}min. ${p.minQty} buc</span>`
+        : p.unit === 'buc' && gramsNote
+        ? `<span class="product-min-note">${gramsNote}</span>`
         : p.unit === 'kg' ? `<span class="product-min-note">per kg</span>` : '';
 
     // Imagine reală sau emoji placeholder
@@ -504,6 +509,9 @@ function _renderModalContent(p) {
             datorită naturii artizanale a preparatelor.
         </div>`;
     } else if (p.unit === 'buc') {
+        const gramsHint = p.pieceGrams
+            ? `<p class="modal-piece-grams">1 buc ≈ <strong>${p.pieceGrams} g</strong></p>`
+            : '';
         selectorHTML = `
         <div class="modal-selector-section">
             <p class="modal-selector-label">Cantitate (min. ${p.minQty} buc):</p>
@@ -512,6 +520,7 @@ function _renderModalContent(p) {
                 <span class="modal-qty-value" id="modal-qty-value">${p.minQty} buc</span>
                 <button class="modal-qty-btn" id="modal-qty-plus" type="button" aria-label="Crește">+</button>
             </div>
+            ${gramsHint}
         </div>`;
     }
 

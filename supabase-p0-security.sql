@@ -83,7 +83,7 @@ REVOKE UPDATE ON TABLE products FROM authenticated;
 GRANT UPDATE (
     name, category, price, unit, min_qty, step, max_qty,
     description, badge, weight_note, ingredients, allergens,
-    images, nutritional, active, emoji, bg, slug
+    images, nutritional, active, emoji, bg, slug, piece_grams
 ) ON TABLE products TO authenticated;
 
 GRANT INSERT ON TABLE products TO authenticated;

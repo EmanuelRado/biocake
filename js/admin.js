@@ -550,7 +550,7 @@ async function loadProducts() {
 
     const { data, error } = await window._biocakeSupabase
         .from('products')
-        .select('id, slug, name, category, price, unit, min_qty, step, max_qty, description, badge, weight_note, ingredients, allergens, images, nutritional, active, emoji, bg')
+        .select('id, slug, name, category, price, unit, min_qty, step, max_qty, piece_grams, description, badge, weight_note, ingredients, allergens, images, nutritional, active, emoji, bg')
         .order('category')
         .order('name');
 
@@ -592,7 +592,7 @@ function _renderProducts() {
     <div class="product-thumb" style="background:${_esc(p.bg || '#FAF6F1')}">${thumb}</div>
     <div class="product-info">
         <strong>${_esc(p.name)}</strong>
-        <span class="product-price">${Number(p.price).toFixed(0)} RON / ${p.unit}${p.badge ? ` · <em>${_esc(p.badge)}</em>` : ''}</span>
+        <span class="product-price">${Number(p.price).toFixed(0)} RON / ${p.unit}${p.unit === 'buc' && p.piece_grams ? ` · ${p.piece_grams} g` : ''}${p.badge ? ` · <em>${_esc(p.badge)}</em>` : ''}</span>
     </div>
     <button class="btn-edit-product" data-product-id="${p.id}" aria-label="Editează ${_esc(p.name)}">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
@@ -773,6 +773,11 @@ function _renderEditForm(p) {
         <label class="edit-label" for="edit-max-qty">Greutate maximă (kg)</label>
         <input class="edit-input" type="number" id="edit-max-qty" value="${p.max_qty || 2.4}" min="0.1" step="0.1">
     </div>
+    <div class="edit-field" id="edit-piece-grams-wrap" style="${p.unit === 'buc' ? '' : 'display:none'}">
+        <label class="edit-label" for="edit-piece-grams">Gramaj per bucată (g) <span class="edit-hint">(opțional)</span></label>
+        <input class="edit-input" type="number" id="edit-piece-grams" value="${p.piece_grams || ''}" min="1" step="1" placeholder="ex: 120">
+        <p class="edit-hint edit-hint-block">Afișat clienților ca greutate aproximativă a unei bucăți.</p>
+    </div>
     <div class="weight-options-preview" id="weight-options-preview"></div>
 
     <div class="edit-active-row edit-active-row--sub">
@@ -893,12 +898,14 @@ function _renderEditForm(p) {
         });
     }
 
-    // Unit change → update labels + show/hide max_qty + weight preview
+    // Unit change → update labels + show/hide max_qty / piece_grams + weight preview
     document.getElementById('edit-unit').addEventListener('change', function () {
-        const isKg = this.value === 'kg';
+        const isKg  = this.value === 'kg';
+        const isBuc = this.value === 'buc';
         document.getElementById('edit-min-qty-label').textContent = isKg ? 'Greutate minimă (kg)' : 'Minim comandă';
         document.getElementById('edit-step-label').textContent    = isKg ? 'Pas (kg)' : 'Pas';
         document.getElementById('edit-max-qty-wrap').style.display = isKg ? '' : 'none';
+        document.getElementById('edit-piece-grams-wrap').style.display = isBuc ? '' : 'none';
         _updateWeightPreview();
     });
 
@@ -1240,6 +1247,10 @@ async function _saveProduct() {
     const min_qty      = parseFloat(document.getElementById('edit-min-qty').value) || 1;
     const step         = parseFloat(document.getElementById('edit-step').value) || 1;
     const max_qty      = parseFloat(document.getElementById('edit-max-qty')?.value) || 2.4;
+    const pieceGramsRaw = document.getElementById('edit-piece-grams')?.value;
+    const piece_grams  = unit === 'buc' && pieceGramsRaw
+        ? (parseInt(pieceGramsRaw, 10) || null)
+        : null;
     const badge        = document.getElementById('edit-badge').value.trim() || null;
     const weight_note  = document.getElementById('edit-weight-note').checked;
     const description  = document.getElementById('edit-description').value.trim();
@@ -1265,7 +1276,7 @@ async function _saveProduct() {
         salt:          parseFloat(document.getElementById('edit-nutr-salt').value) || 0,
     };
 
-    const patch = { name, category, price, unit, min_qty, step, max_qty, badge, weight_note, description, ingredients, allergens, images, nutritional, active };
+    const patch = { name, category, price, unit, min_qty, step, max_qty, piece_grams, badge, weight_note, description, ingredients, allergens, images, nutritional, active };
 
     const sb = window._biocakeSupabase;
     let savedId = _editProductId;
@@ -1315,7 +1326,7 @@ function _openNewProductModal() {
     _editProductId = '__new__';
     _renderEditForm({
         id: '__new__', slug: '', name: '', category: 'torturi-clasice',
-        price: 0, unit: 'buc', min_qty: 1, step: 0.6, max_qty: 2.4,
+        price: 0, unit: 'buc', min_qty: 1, step: 1, max_qty: 2.4, piece_grams: null,
         description: '', badge: null, weight_note: null,
         ingredients: '', allergens: [], images: [],
         nutritional: { per: '100g', energy_kcal: 0, energy_kj: 0, fat: 0, saturated_fat: 0, carbs: 0, sugars: 0, fiber: 0, protein: 0, salt: 0 },

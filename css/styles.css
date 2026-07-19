@@ -1685,6 +1685,13 @@ em { font-family: var(--font-serif); font-style: italic; }
     line-height: 38px;
 }
 
+.modal-piece-grams {
+    margin: 10px 0 0;
+    font-size: 0.82rem;
+    color: var(--choco-mid);
+    line-height: 1.4;
+}
+
 /* Weight note */
 .modal-weight-note {
     display: flex;

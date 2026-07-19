@@ -91,6 +91,9 @@ function _cartItemHTML(item) {
     const weightWarn = item.weightNote
         ? `<span class="cart-item-note">± max 100g variație greutate</span>`
         : '';
+    const pieceNote = item.unit === 'buc' && item.pieceGrams
+        ? `<span class="cart-item-note">${item.pieceGrams} g / buc</span>`
+        : '';
 
     // Torturi (kg) → pills fixe
     let qtyControl = '';
@@ -122,6 +125,7 @@ function _cartItemHTML(item) {
         </div>
         <div class="cart-item-info">
             <span class="cart-item-name">${item.name}</span>
+            ${pieceNote}
             ${weightWarn}
             ${qtyControl}
         </div>

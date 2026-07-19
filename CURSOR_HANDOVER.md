@@ -17,6 +17,7 @@ Acest document este creat pentru a fi importat într-o nouă sesiune de lucru î
     *   Plata se face prin avans **50%** (cu notificare discretă la checkout). 
     *   Momentan, din lipsă de credentiale de merchant Netopia active, comanda se trimite în DB, se arată ecran de succes și clientul trimite pre-completat detaliile pe **WhatsApp** printr-un buton dedicat, urmând ca link-ul de plată Netopia să fie trimis manual de administrator (mama).
 *   **Regula Greutate Torturi:** Torturile vândute per kg au greutăți configurabile per-produs via câmpurile `min_qty`, `step` și `max_qty` (ex: 1.2 → 2.4 kg, pas 0.6). Opțiunile se generează dinamic. Se afișează nota privind variația manuală de sub 100g (controlată de câmpul boolean `weight_note`).
+*   **Gramaj pe bucată:** Produsele cu `unit = buc` pot avea `piece_grams` (integer, opțional) — gramajul aproximativ al unei bucăți, afișat pe card, în modal și în coș.
 *   **Layout Mobil:** Catalogul de produse afișează **câte 2 produse pe rând** pe telefon mobil pentru o navigare rapidă.
 
 ---

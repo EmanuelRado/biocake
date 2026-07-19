@@ -68,6 +68,7 @@ function addToCart(product, qty) {
             qty:        qty,
             step:       product.step,
             weightNote: product.weightNote || false,
+            pieceGrams: product.pieceGrams || null,
             emoji:      product.emoji,
             bg:         product.bg,
         });

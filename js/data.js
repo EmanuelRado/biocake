@@ -20,6 +20,7 @@ function _mapRow(row) {
         minQty:      Number(row.min_qty  ?? 1),
         step:        Number(row.step     ?? 0.6),
         maxQty:      Number(row.max_qty  ?? 2.4),
+        pieceGrams:  row.piece_grams != null ? Number(row.piece_grams) : null,
         description: row.description,
         badge:       row.badge ?? null,
         weightNote:  row.weight_note ?? false,

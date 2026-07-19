@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS products (
     unit         text        NOT NULL,   -- 'kg' | 'buc' | 'cutie'
     min_qty      numeric(5,2) DEFAULT 1,
     step         numeric(5,2) DEFAULT 1,
+    max_qty      numeric(5,2) DEFAULT 2.4,
+    piece_grams  integer,                -- gramaj per bucată (g), doar pentru unit=buc
     description  text,
     badge        text,
     weight_note  boolean     DEFAULT false,
