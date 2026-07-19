@@ -85,8 +85,19 @@ function renderCartContents() {
 }
 
 /* ── Item HTML ───────────────────────────────────────── */
+function _cartCoverImage(item) {
+    if (item.image) return item.image;
+    // Coș vechi fără image: încearcă din catalogul încărcat
+    if (typeof getProductById === 'function') {
+        const p = getProductById(item.id);
+        if (p?.images?.length) return p.images[0];
+    }
+    return null;
+}
+
 function _cartItemHTML(item) {
     const lineTotal = (item.price * item.qty).toFixed(2).replace('.', ',');
+    const cover = _cartCoverImage(item);
 
     const weightWarn = item.weightNote
         ? `<span class="cart-item-note">± max 100g variație greutate</span>`
@@ -110,18 +121,27 @@ function _cartItemHTML(item) {
     } else {
         // Prăjituri & cutii → +/−
         const qtyLabel = item.unit === 'cutie' ? `${item.qty} cutie` : `${item.qty} buc`;
+        const minQty = _cartItemMinQty(item);
+        const atMin = item.unit !== 'kg' && item.qty <= minQty;
         qtyControl = `
         <div class="qty-control">
-            <button class="qty-btn qty-minus" data-id="${item.id}" aria-label="Scade cantitatea">−</button>
+            <button class="qty-btn qty-minus" data-id="${item.id}" aria-label="Scade cantitatea"
+                    ${atMin ? 'disabled' : ''} title="${atMin ? `Minim ${minQty} ${item.unit}` : ''}">−</button>
             <span class="qty-value">${qtyLabel}</span>
             <button class="qty-btn qty-plus" data-id="${item.id}" aria-label="Crește cantitatea">+</button>
         </div>`;
     }
 
+    const thumb = cover
+        ? `<img src="${_escCartAttr(cover)}" alt="" class="cart-item-photo" loading="lazy" width="48" height="48">`
+        : (item.emoji || '🍰');
+
     return `
     <div class="cart-item" data-id="${item.id}">
-        <div class="cart-item-emoji" style="background:${item.bg};" aria-hidden="true">
-            ${item.emoji}
+        <div class="cart-item-thumb${cover ? ' cart-item-thumb--photo' : ''}"
+             style="${cover ? '' : `background:${item.bg || 'var(--bg)'};`}"
+             aria-hidden="true">
+            ${thumb}
         </div>
         <div class="cart-item-info">
             <span class="cart-item-name">${item.name}</span>
@@ -139,6 +159,24 @@ function _cartItemHTML(item) {
             </button>
         </div>
     </div>`;
+}
+
+function _escCartAttr(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function _cartItemMinQty(item) {
+    if (typeof _itemMinQty === 'function') return _itemMinQty(item);
+    if (item.minQty != null && item.minQty > 0) return Number(item.minQty);
+    if (typeof getProductById === 'function') {
+        const p = getProductById(item.id);
+        if (p?.minQty != null) return Number(p.minQty);
+    }
+    return 1;
 }
 
 /* ── Binding butoane item ─────────────────────────────── */

@@ -3,8 +3,7 @@
  * Etapa 2: Gestiunea coșului de cumpărături.
  *
  * Structura unui item în coș:
- * { id: string, name: string, price: number, unit: string,
- *   qty: number, step: number, weightNote: boolean }
+ * { id, name, price, unit, qty, step, weightNote, pieceGrams, image, emoji, bg }
  */
 
 const CART_KEY = 'biocake_cart';
@@ -56,9 +55,13 @@ function getZone() {
 function addToCart(product, qty) {
     const items = loadCart();
     const existing = items.find(i => i.id === product.id);
+    const cover = (product.images && product.images[0]) || null;
 
     if (existing) {
         existing.qty = Math.round((existing.qty + qty) * 100) / 100;
+        // Actualizează coperta dacă lipsea (coș vechi) sau s-a schimbat
+        if (cover) existing.image = cover;
+        if (product.minQty != null) existing.minQty = product.minQty;
     } else {
         items.push({
             id:         product.id,
@@ -67,8 +70,10 @@ function addToCart(product, qty) {
             unit:       product.unit,
             qty:        qty,
             step:       product.step,
+            minQty:     product.minQty || 1,
             weightNote: product.weightNote || false,
             pieceGrams: product.pieceGrams || null,
+            image:      cover,
             emoji:      product.emoji,
             bg:         product.bg,
         });
@@ -80,6 +85,7 @@ function addToCart(product, qty) {
 
 /**
  * Modifică cantitatea unui produs existent.
+ * Respectă minimul de comandă (minQty) — nu coboară sub el.
  * @param {string} id
  * @param {number} delta — poate fi negativ
  */
@@ -88,7 +94,11 @@ function changeQty(id, delta) {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
+    const minQty = _itemMinQty(item);
     const newQty = Math.round((item.qty + delta) * 100) / 100;
+
+    // Sub minim → nu permite (ștergerea se face din butonul X)
+    if (newQty < minQty) return;
 
     if (newQty <= 0) {
         removeFromCart(id);
@@ -96,8 +106,20 @@ function changeQty(id, delta) {
     }
 
     item.qty = newQty;
+    // Persistă minQty pe iteme vechi din localStorage
+    if (item.minQty == null) item.minQty = minQty;
     saveCart(items);
     _notifyCartChange();
+}
+
+/** Minim comandă pentru un item din coș (cu fallback din catalog). */
+function _itemMinQty(item) {
+    if (item.minQty != null && item.minQty > 0) return Number(item.minQty);
+    if (typeof getProductById === 'function') {
+        const p = getProductById(item.id);
+        if (p?.minQty != null) return Number(p.minQty);
+    }
+    return 1;
 }
 
 /**
