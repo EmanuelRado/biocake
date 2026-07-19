@@ -2,7 +2,7 @@
  * BioCake Admin — Service Worker
  * PWA installabilă: shell offline + notificări push la comandă nouă.
  */
-const CACHE = 'biocake-admin-v3';
+const CACHE = 'biocake-admin-v7';
 const SHELL = [
     '/admin.html',
     '/css/admin.css',
@@ -37,16 +37,23 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(req.url);
 
-    // Navigări (deschiderea paginii): network-first, fallback la cache offline
+    // Navigări: network-first. Fallback offline la admin DOAR pentru rute admin
+    // (scope SW e / ca WebAPK/push să meargă; nu redirecționăm site-ul public).
     if (req.mode === 'navigate') {
+        const isAdminNav = url.pathname === '/admin.html' || url.pathname.startsWith('/admin');
         event.respondWith(
             fetch(req)
                 .then((res) => {
-                    const copy = res.clone();
-                    caches.open(CACHE).then((c) => c.put(req, copy));
+                    if (isAdminNav && res && res.status === 200) {
+                        const copy = res.clone();
+                        caches.open(CACHE).then((c) => c.put(req, copy));
+                    }
                     return res;
                 })
-                .catch(() => caches.match(req).then((r) => r || caches.match('/admin.html')))
+                .catch(() => {
+                    if (!isAdminNav) return caches.match(req);
+                    return caches.match(req).then((r) => r || caches.match('/admin.html'));
+                })
         );
         return;
     }

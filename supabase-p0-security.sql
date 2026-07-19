@@ -32,6 +32,13 @@ CREATE POLICY "orders_admin_update" ON orders
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "orders_admin_delete" ON orders;
+CREATE POLICY "orders_admin_delete" ON orders
+    FOR DELETE TO authenticated
+    USING (public.is_admin());
+
+GRANT DELETE ON TABLE orders TO authenticated;
+
 
 -- ── 3. Order items ───────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "order_items_admin_read" ON order_items;

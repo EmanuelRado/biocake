@@ -2711,7 +2711,15 @@ em { font-family: var(--font-serif); font-style: italic; }
     box-shadow: 0 0 0 3px rgba(252, 109, 159, 0.12);
 }
 
-.co-input-date { cursor: pointer; }
+.co-input-date,
+.co-input-time { cursor: pointer; }
+select.co-input-time {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B3A2A' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
 
 .co-textarea {
     resize: vertical;
@@ -2721,12 +2729,31 @@ em { font-family: var(--font-serif); font-style: italic; }
 
 .co-field-hint {
     display: flex;
-    align-items: center;
-    gap: 5px;
+    align-items: flex-start;
+    gap: 6px;
     font-size: 0.75rem;
     color: var(--text-muted);
-    margin-top: 5px;
-    line-height: 1.4;
+    margin-top: 8px;
+    line-height: 1.45;
+}
+.co-field-hint svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.co-field-hint-text {
+    flex: 1;
+    min-width: 0;
+}
+.co-hint-line { display: inline; }
+.co-hint-sep  { display: inline; }
+
+@media (max-width: 640px) {
+    .co-hint-line {
+        display: block;
+    }
+    .co-hint-sep {
+        display: none;
+    }
 }
 
 /* Zone pills */

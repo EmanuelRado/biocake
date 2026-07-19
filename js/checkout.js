@@ -1,11 +1,18 @@
 /**
  * BioCake — checkout.js
- * Etapa 4: Formular comandă, validare 48h, submit Supabase, confirmare + WhatsApp.
+ * Formular comandă: validare 48h reale, interval livrare 08:00–20:00 (pas 30 min).
  */
 
 /* ── Config ──────────────────────────────────────────── */
 // TODO: înlocuiește cu numărul de WhatsApp al cofetăriei (format: 40XXXXXXXXX)
 const CHECKOUT_WHATSAPP = '40700000000';
+
+const DELIVERY_WINDOW = {
+    startHour: 8,   // 08:00
+    endHour:   20,  // 20:00 inclusiv
+    stepMin:   30,
+    leadMs:    48 * 60 * 60 * 1000,
+};
 
 /* ── Init ────────────────────────────────────────────── */
 function initCheckout() {
@@ -14,13 +21,11 @@ function initCheckout() {
     document.getElementById('checkout-close')
         ?.addEventListener('click', closeCheckout);
 
-    // Click pe backdrop → închide
     document.getElementById('checkout-overlay')
         ?.addEventListener('click', e => {
             if (e.target.id === 'checkout-overlay') closeCheckout();
         });
 
-    // ESC → închide
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeCheckout();
     });
@@ -48,7 +53,8 @@ function _renderCheckout() {
     const delivery = getDeliveryFee(zone);
     const total    = subtotal + delivery;
     const advance  = Math.round(total * 0.5 * 100) / 100;
-    const minDate  = _getMinDate();
+    const earliest = _getEarliestDeliverySlot();
+    const minDate  = _toDateInput(earliest);
 
     document.getElementById('co-view-form').style.display = '';
     document.getElementById('co-view-success').style.display = 'none';
@@ -56,6 +62,7 @@ function _renderCheckout() {
     document.getElementById('co-summary-col').innerHTML = _summaryHTML(items, subtotal, delivery, total, advance);
 
     _bindCheckoutEvents(zone);
+    _refreshTimeOptions(minDate, true);
 }
 
 /* ── Form HTML ───────────────────────────────────────── */
@@ -109,21 +116,35 @@ function _formHTML(zone, minDate) {
                 </div>
             </div>
 
-            <div class="co-field">
-                <label class="co-label" for="co-date">
-                    Data livrării * <span class="co-optional">(minimum 48h în avans)</span>
-                </label>
-                <input class="co-input co-input-date" type="date" id="co-date" name="date"
-                       min="${minDate}" required>
-                <p class="co-field-hint">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
-                    </svg>
-                    Livrăm luni — sâmbătă. Prima dată disponibilă: <strong>${_formatDateRo(minDate)}</strong>.
-                </p>
+            <div class="co-field-row">
+                <div class="co-field">
+                    <label class="co-label" for="co-date">
+                        Data livrării *
+                    </label>
+                    <input class="co-input co-input-date" type="date" id="co-date" name="date"
+                           min="${minDate}" value="${minDate}" required>
+                </div>
+                <div class="co-field">
+                    <label class="co-label" for="co-time">
+                        Ora livrării *
+                    </label>
+                    <select class="co-input co-input-time" id="co-time" name="time" required>
+                        <option value="">Se încarcă…</option>
+                    </select>
+                </div>
             </div>
+            <p class="co-field-hint">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
+                </svg>
+                <span class="co-field-hint-text">
+                    <span class="co-hint-line">Minim <strong>48 de ore</strong> în avans.</span>
+                    <span class="co-hint-sep" aria-hidden="true"> · </span>
+                    <span class="co-hint-line">Interval livrare Luni–Sâmbătă <strong>08:00–20:00</strong>.</span>
+                </span>
+            </p>
 
             <div class="co-field">
                 <label class="co-label" for="co-address">Adresă livrare *</label>
@@ -137,7 +158,7 @@ function _formHTML(zone, minDate) {
                     Mențiuni speciale <span class="co-optional">(opțional)</span>
                 </label>
                 <textarea class="co-textarea" id="co-notes" name="notes" rows="3"
-                          placeholder="Alergie specifică, inscripție tort, oră preferată de livrare, etaj..."></textarea>
+                          placeholder="Alergie specifică, inscripție tort, etaj, interfon..."></textarea>
             </div>
         </fieldset>
 
@@ -205,7 +226,6 @@ function _summaryHTML(items, subtotal, delivery, total, advance) {
 
 /* ── Bind events ─────────────────────────────────────── */
 function _bindCheckoutEvents(currentZone) {
-    // Zone pills → actualizează sumar live
     document.querySelectorAll('.co-zone-pill input[type=radio]').forEach(radio => {
         radio.addEventListener('change', () => {
             document.querySelectorAll('.co-zone-pill')
@@ -221,6 +241,11 @@ function _bindCheckoutEvents(currentZone) {
                 _summaryHTML(getCart(), subtotal, delivery, total, advance);
             _bindSubmitBtn();
         });
+    });
+
+    document.getElementById('co-date')?.addEventListener('change', () => {
+        const dateVal = document.getElementById('co-date').value;
+        _refreshTimeOptions(dateVal, true);
     });
 
     _bindSubmitBtn();
@@ -240,6 +265,7 @@ function _getFormData() {
         email:   (fd.get('email')   || '').trim() || null,
         zone:    fd.get('zone'),
         date:    fd.get('date'),
+        time:    fd.get('time'),
         address: (fd.get('address') || '').trim(),
         notes:   (fd.get('notes')   || '').trim() || null,
     };
@@ -257,19 +283,27 @@ function _validate(fd) {
     if (!fd.zone)
         errs.push('Selectează zona de livrare (București sau Ilfov).');
 
-    if (!fd.date) {
+    if (!fd.date)
         errs.push('Selectează data de livrare.');
-    } else {
-        const chosen = new Date(fd.date + 'T00:00:00');
-        const minD   = new Date();
-        minD.setDate(minD.getDate() + 2);
-        minD.setHours(0, 0, 0, 0);
 
-        if (chosen < minD)
-            errs.push(`Data de livrare trebuie să fie minimum ${_formatDateRo(_getMinDate())} (48h în avans).`);
+    if (!fd.time)
+        errs.push('Selectează ora de livrare.');
 
-        if (chosen.getDay() === 0)
-            errs.push('Nu livrăm duminica. Te rugăm alege o zi între luni și sâmbătă.');
+    if (fd.date && fd.time) {
+        const slot = _combineDateTime(fd.date, fd.time);
+        const now  = new Date();
+        const minAt = new Date(now.getTime() + DELIVERY_WINDOW.leadMs);
+
+        if (Number.isNaN(slot.getTime())) {
+            errs.push('Data sau ora de livrare nu este validă.');
+        } else if (slot.getDay() === 0) {
+            errs.push('Nu livrăm duminica. Alege o zi între luni și sâmbătă.');
+        } else if (!_isInDeliveryWindow(slot)) {
+            errs.push('Ora de livrare trebuie să fie între 08:00 și 20:00 (din 30 în 30 de minute).');
+        } else if (slot.getTime() < minAt.getTime()) {
+            const earliest = _getEarliestDeliverySlot(now);
+            errs.push(`Livrarea trebuie să fie la minimum 48 de ore. Primul slot disponibil: ${_formatDateTimeRo(earliest)}.`);
+        }
     }
 
     if (!fd.address || fd.address.length < 5)
@@ -307,6 +341,7 @@ async function _handleSubmit(e) {
             customerEmail:   fd.email,
             deliveryZone:    fd.zone,
             deliveryDate:    fd.date,
+            deliveryTime:    fd.time,
             deliveryAddress: fd.address,
             notes:           fd.notes,
         });
@@ -326,7 +361,7 @@ async function _handleSubmit(e) {
 /* ── Success screen ──────────────────────────────────── */
 function _showSuccess({ order, total, advanceDue }, fd) {
     const shortId = order.id.split('-')[0].toUpperCase();
-    const waMsg   = _buildWhatsAppMsg(shortId, total, advanceDue, fd.date, fd.name);
+    const waMsg   = _buildWhatsAppMsg(shortId, total, advanceDue, fd.date, fd.time, fd.name);
     const waUrl   = `https://wa.me/${CHECKOUT_WHATSAPP}?text=${encodeURIComponent(waMsg)}`;
 
     document.getElementById('co-view-form').style.display = 'none';
@@ -357,6 +392,7 @@ function _showSuccess({ order, total, advanceDue }, fd) {
         </div>
 
         <p class="co-success-note">
+            Livrare programată: <strong>${_formatDateRo(fd.date)} · ${fd.time}</strong><br>
             Te vom contacta în scurt timp pe WhatsApp sau telefon pentru confirmarea comenzii
             și trimiterea link-ului de plată pentru avans.
         </p>
@@ -379,22 +415,140 @@ function _showSuccess({ order, total, advanceDue }, fd) {
     });
 }
 
-/* ── Helpers ─────────────────────────────────────────── */
-function _getMinDate() {
-    const d = new Date();
-    d.setDate(d.getDate() + 2);
-    // Dacă cade duminică → sărim la luni
-    if (d.getDay() === 0) d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+/* ── Delivery slot helpers (48h + 08:00–20:00 / 30 min) ─ */
+function _ceilToHalfHour(d) {
+    const out = new Date(d.getTime());
+    out.setSeconds(0, 0);
+    const m = out.getMinutes();
+    if (m === 0 || m === 30) return out;
+    if (m < 30) {
+        out.setMinutes(30);
+    } else {
+        out.setHours(out.getHours() + 1, 0, 0, 0);
+    }
+    return out;
+}
+
+function _isInDeliveryWindow(d) {
+    if (d.getDay() === 0) return false;
+    const mins = d.getHours() * 60 + d.getMinutes();
+    const start = DELIVERY_WINDOW.startHour * 60;
+    const end   = DELIVERY_WINDOW.endHour * 60;
+    if (mins < start || mins > end) return false;
+    return mins % DELIVERY_WINDOW.stepMin === 0;
+}
+
+function _getEarliestDeliverySlot(from = new Date()) {
+    let t = _ceilToHalfHour(new Date(from.getTime() + DELIVERY_WINDOW.leadMs));
+    // max ~3 weeks of half-hour steps
+    for (let i = 0; i < 21 * 48; i++) {
+        if (_isInDeliveryWindow(t)) return t;
+        t = new Date(t.getTime() + DELIVERY_WINDOW.stepMin * 60 * 1000);
+    }
+    // fallback: next Monday 08:00
+    const fallback = new Date(from);
+    fallback.setDate(fallback.getDate() + 3);
+    while (fallback.getDay() === 0) fallback.setDate(fallback.getDate() + 1);
+    fallback.setHours(DELIVERY_WINDOW.startHour, 0, 0, 0);
+    return fallback;
+}
+
+function _slotsForDate(dateStr) {
+    const earliest = _getEarliestDeliverySlot();
+    const slots = [];
+    const [y, m, day] = dateStr.split('-').map(Number);
+    if (!y || !m || !day) return slots;
+
+    const probe = new Date(y, m - 1, day, 0, 0, 0, 0);
+    if (probe.getDay() === 0) return slots;
+
+    for (let mins = DELIVERY_WINDOW.startHour * 60; mins <= DELIVERY_WINDOW.endHour * 60; mins += DELIVERY_WINDOW.stepMin) {
+        const h = Math.floor(mins / 60);
+        const mi = mins % 60;
+        const slot = new Date(y, m - 1, day, h, mi, 0, 0);
+        if (slot.getTime() >= earliest.getTime()) {
+            slots.push(_toTimeInput(slot));
+        }
+    }
+    return slots;
+}
+
+function _refreshTimeOptions(dateStr, preferEarliest) {
+    const select = document.getElementById('co-time');
+    if (!select) return;
+
+    const prev = select.value;
+    const slots = dateStr ? _slotsForDate(dateStr) : [];
+
+    if (slots.length === 0) {
+        select.innerHTML = '<option value="">Nicio oră disponibilă în această zi</option>';
+        select.disabled = true;
+        // Dacă e duminică / fără sloturi, sare la următoarea zi validă
+        if (dateStr) {
+            const next = _nextAvailableDate(dateStr);
+            const dateInput = document.getElementById('co-date');
+            if (next && dateInput && next !== dateStr) {
+                dateInput.value = next;
+                _refreshTimeOptions(next, true);
+            }
+        }
+        return;
+    }
+
+    select.disabled = false;
+    const pick = preferEarliest
+        ? slots[0]
+        : (slots.includes(prev) ? prev : slots[0]);
+
+    select.innerHTML = slots.map(t =>
+        `<option value="${t}" ${t === pick ? 'selected' : ''}>${t}</option>`
+    ).join('');
+}
+
+function _nextAvailableDate(fromDateStr) {
+    const [y, m, d] = fromDateStr.split('-').map(Number);
+    let cursor = new Date(y, m - 1, d);
+    for (let i = 0; i < 14; i++) {
+        cursor.setDate(cursor.getDate() + 1);
+        const key = _toDateInput(cursor);
+        if (_slotsForDate(key).length) return key;
+    }
+    return null;
+}
+
+function _combineDateTime(dateStr, timeStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+    return new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
+}
+
+function _toDateInput(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function _toTimeInput(d) {
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
 }
 
 function _formatDateRo(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function _buildWhatsAppMsg(orderId, total, advance, date, name) {
-    return `Bună! Am plasat o comandă pe BioCake.ro 🎂\n\nNumăr comandă: #${orderId}\nNume: ${name}\nData livrare: ${_formatDateRo(date)}\n\nTotal comandă: ${total.toFixed(2)} RON\nAvans de plătit (50%): ${advance.toFixed(2)} RON\n\nAștept confirmarea și link-ul de plată. Mulțumesc! 🙏`;
+function _formatDateTimeRo(d) {
+    return d.toLocaleString('ro-RO', {
+        weekday: 'short', day: 'numeric', month: 'long',
+        hour: '2-digit', minute: '2-digit',
+    });
+}
+
+function _buildWhatsAppMsg(orderId, total, advance, date, time, name) {
+    return `Bună! Am plasat o comandă pe BioCake.ro 🎂\n\nNumăr comandă: #${orderId}\nNume: ${name}\nLivrare: ${_formatDateRo(date)} la ${time}\n\nTotal comandă: ${total.toFixed(2)} RON\nAvans de plătit (50%): ${advance.toFixed(2)} RON\n\nAștept confirmarea și link-ul de plată. Mulțumesc! 🙏`;
 }
 
 /* ── Inject HTML (singleton) ─────────────────────────── */

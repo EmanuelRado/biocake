@@ -35,6 +35,7 @@ async function submitOrder({
     customerEmail = null,
     deliveryZone,
     deliveryDate,
+    deliveryTime = null,
     deliveryAddress = null,
     notes = null,
 }) {
@@ -47,6 +48,14 @@ async function submitOrder({
     const advanceDue  = Math.round(total * 0.5 * 100) / 100;
     const orderId     = _generateUUID();
 
+    // Normalize time to HH:MM:SS for Postgres `time`
+    let timeValue = null;
+    if (deliveryTime) {
+        timeValue = /^\d{2}:\d{2}:\d{2}$/.test(deliveryTime)
+            ? deliveryTime
+            : `${deliveryTime}:00`;
+    }
+
     // 1. Insert order header (no .select().single() to avoid RLS SELECT restrictions)
     const { error: orderErr } = await db
         .from('orders')
@@ -57,6 +66,7 @@ async function submitOrder({
             customer_email:   customerEmail,
             delivery_zone:    deliveryZone,
             delivery_date:    deliveryDate,
+            delivery_time:    timeValue,
             delivery_address: deliveryAddress,
             notes,
             subtotal,

@@ -63,6 +63,7 @@ Pasul următor este lansarea unui **magazin online premium**, dedicat vânzării
 1. **Torturi & Prăjituri standard** (clasice, moderne, cu opțiuni vegane/raw-vegane integrate din portofoliu, dar fără branding exclusiv vegan).
 2. **Office Boxes** — Cutii cu mini-prăjituri artizanale în 4 mărimi (6 / 12 / 18 / 24 buc), mix asortat sau un singur sortiment. Inspirate de tradiția românească de a aduce dulciuri la birou de ziua ta.
 3. **Comenzi Speciale** — Candy bar-uri pentru evenimente, torturi personalizate și pachete aniversare. **Toate comenzile speciale necesită un avans de 50%.**
+4. **Filozofie Ingrediente**: Toate preparatele sunt realizate complet **fără zahăr** (folosind doar îndulcitori mai puțin nocivi) și se pune un accent deosebit pe caracterul **artizanal** și **făcut în casă**. *(Notat pe 18.07.2026)*
 
 ---
 
@@ -140,4 +141,5 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 
 - [ ] **Conturi Clienți / Autofill**: Analizarea posibilității de creare cont sau implementarea unei funcții de autofill pentru următoarele comenzi (cu scopul colectării datelor de marketing și simplificării checkout-ului). *(Notat pe 10.07.2026)*
 - [x] **Aplicație Admin dedicată**: Transformarea panoului de administrare într-o aplicație de sine stătătoare (PWA dedicat / Aplicație Mobilă). *(Notat pe 10.07.2026)* ✅ 2026-07-13
+- [ ] **Reordonare Imagini**: Posibilitatea de a modifica manual ordinea imaginilor din galeria unui produs (în panoul de admin). *(Notat pe 15.07.2026)*
 

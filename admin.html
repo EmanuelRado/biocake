@@ -193,25 +193,26 @@
 <!-- ── PWA: service worker + prompt de instalare ── -->
 <script>
 (function () {
-    // Înregistrează service worker-ul
+    // Scope / = necesar pentru WebAPK + push pe Android (Chrome)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js', { scope: '/admin.html' }).catch((err) => {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
                 console.warn('SW register failed:', err);
             });
         });
     }
 
-    const banner    = document.getElementById('pwa-banner');
+    const banner     = document.getElementById('pwa-banner');
     const installBtn = document.getElementById('pwa-install-btn');
-    const closeBtn  = document.getElementById('pwa-banner-close');
-    const textEl    = document.getElementById('pwa-banner-text');
+    const closeBtn   = document.getElementById('pwa-banner-close');
+    const textEl     = document.getElementById('pwa-banner-text');
     let deferredPrompt = null;
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid    = /android/i.test(navigator.userAgent);
+    const isSamsung    = /samsungbrowser/i.test(navigator.userAgent);
 
-    // Bug vechi: X seta localStorage dar bannerul rămânea vizibil → curățăm o dată
     localStorage.removeItem('pwa-banner-dismissed');
 
     function isDismissed() {
@@ -234,6 +235,9 @@
         e.preventDefault();
         deferredPrompt = e;
         installBtn.hidden = false;
+        if (isAndroid) {
+            textEl.textContent = 'Instalează din Chrome pe ecranul principal — necesar pentru notificări la comenzi noi.';
+        }
         showBanner();
     });
 
@@ -251,10 +255,17 @@
         hideBanner(true);
     });
 
-    // iOS Safari: nu are beforeinstallprompt → instrucțiuni manuale
+    // iOS Safari: instrucțiuni manuale
     if (isIOS && !isStandalone) {
         installBtn.hidden = true;
         textEl.textContent = 'iPhone: apasă Share (⬆) în bara Safari, apoi „Adaugă la ecranul principal" — ca să instalezi aplicația și să poți primi notificări.';
+        showBanner();
+    }
+
+    // Samsung Internet pe Android 14+: WebAPK e blocat de Play Protect (targetSdk vechi)
+    if (isAndroid && isSamsung && !isStandalone) {
+        installBtn.hidden = true;
+        textEl.textContent = 'Pe Samsung Internet instalarea e blocată de Google. Deschide biocake.ro/admin.html în Chrome → meniu ⋮ → „Instalează aplicația".';
         showBanner();
     }
 })();

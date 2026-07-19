@@ -301,6 +301,15 @@ function _setupRealtime() {
                 }
             }
         )
+        .on('postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'orders' },
+            (payload) => {
+                const deletedId = payload.old?.id;
+                if (!deletedId) return;
+                _orders = _orders.filter(o => o.id !== deletedId);
+                _renderOrders();
+            }
+        )
         .subscribe();
 }
 
@@ -352,6 +361,12 @@ function _renderOrders() {
             advanceOrderStatus(btn.dataset.orderId, btn.dataset.nextStatus);
         });
     });
+
+    listEl.querySelectorAll('.btn-delete-order').forEach(btn => {
+        btn.addEventListener('click', () => {
+            deleteOrder(btn.dataset.orderId);
+        });
+    });
 }
 
 function _renderOrderCard(order) {
@@ -367,6 +382,11 @@ function _renderOrderCard(order) {
     const dateStr = deliveryDate.toLocaleDateString('ro-RO', {
         weekday: 'short', day: 'numeric', month: 'short',
     });
+    const timeRaw = order.delivery_time || '';
+    const timeStr = timeRaw
+        ? String(timeRaw).slice(0, 5)
+        : '';
+    const whenStr = timeStr ? `${dateStr} · ${timeStr}` : dateStr;
 
     const urgencyBadge = isToday
         ? '<span class="urgency-badge today">AZI</span>'
@@ -385,7 +405,7 @@ function _renderOrderCard(order) {
 
     const waPhone = _formatWAPhone(order.customer_phone || '');
     const waText  = encodeURIComponent(
-        `Bună ${order.customer_name}, comanda ta BioCake pentru ${dateStr} este ${STATUS_LABEL[order.status] ? STATUS_LABEL[order.status].toLowerCase() : order.status}. Mulțumim! 🎂`
+        `Bună ${order.customer_name}, comanda ta BioCake pentru ${whenStr} este ${STATUS_LABEL[order.status] ? STATUS_LABEL[order.status].toLowerCase() : order.status}. Mulțumim! 🎂`
     );
 
     const nextSt = NEXT_STATUS[order.status];
@@ -405,7 +425,7 @@ function _renderOrderCard(order) {
     </div>
 
     <div class="order-meta">
-        <div class="meta-row">${icon('calendar')} <strong>${dateStr}</strong> · ${zone}</div>
+        <div class="meta-row">${icon('calendar')} <strong>${whenStr}</strong> · ${zone}</div>
         <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
         <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
         ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
@@ -430,6 +450,11 @@ function _renderOrderCard(order) {
             </svg>
             <span>WhatsApp</span>
         </a>
+        <button type="button" class="btn-delete-order" data-order-id="${order.id}" aria-label="Șterge comanda" title="Șterge comanda">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+        </button>
     </div>
 </div>`;
 }
@@ -485,6 +510,34 @@ async function advanceOrderStatus(orderId, newStatus) {
     // Update local state — re-render will handle the rest
     const order = _orders.find(o => o.id === orderId);
     if (order) order.status = newStatus;
+    _renderOrders();
+}
+
+async function deleteOrder(orderId) {
+    const order = _orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const shortId = order.id ? order.id.slice(0, 8).toUpperCase() : '';
+    const confirmed = confirm(
+        `Ștergi comanda #${shortId} de la ${order.customer_name}?\n\nAceastă acțiune este permanentă.`
+    );
+    if (!confirmed) return;
+
+    const btn = document.querySelector(`.btn-delete-order[data-order-id="${orderId}"]`);
+    if (btn) btn.disabled = true;
+
+    const { error } = await window._biocakeSupabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+    if (error) {
+        if (btn) btn.disabled = false;
+        alert('Nu s-a putut șterge comanda:\n' + error.message);
+        return;
+    }
+
+    _orders = _orders.filter(o => o.id !== orderId);
     _renderOrders();
 }
 
@@ -625,6 +678,15 @@ function _closeEditModal() {
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     _editProductId = null;
+
+    // Reset footer buttons — altfel rămân disabled după Salvează
+    const saveBtn = document.getElementById('edit-save');
+    const delBtn  = document.getElementById('edit-delete');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Salvează modificările';
+    }
+    if (delBtn) delBtn.disabled = false;
 }
 
 function _renderEditForm(p) {
@@ -799,7 +861,7 @@ function _renderEditForm(p) {
     </div>
 
     <div class="edit-section-title">Imagini produs</div>
-    <p class="edit-hint edit-hint-block">Trage poze aici sau apasă pentru a deschide galeria telefonului</p>
+    <p class="edit-hint edit-hint-block">Trage poze aici sau apasă pentru galerie. Prima imagine = coperta pe site. Reordonează cu săgețile sau prin tragere.</p>
 
     <div class="image-dropzone" id="image-dropzone" role="button" tabindex="0" aria-label="Adaugă imagini produs">
         <input type="file" id="image-file-input" accept="image/*" multiple hidden>
@@ -848,13 +910,18 @@ function _renderEditForm(p) {
 
     // Image upload: dropzone + gallery (mobile file picker)
     _bindImageDropzone(p);
+    _bindImagesListSort();
 
     document.getElementById('edit-images-list').querySelectorAll('.image-row').forEach(row => {
         _bindImageRowEvents(row);
     });
 
-    // Save button label
-    document.getElementById('edit-save').textContent = isNew ? 'Adaugă produs' : 'Salvează modificările';
+    // Save button label + re-enable (în caz că a rămas disabled)
+    const saveBtn = document.getElementById('edit-save');
+    saveBtn.disabled = false;
+    saveBtn.textContent = isNew ? 'Adaugă produs' : 'Salvează modificările';
+    const delBtnFooter = document.getElementById('edit-delete');
+    if (delBtnFooter) delBtnFooter.disabled = false;
 }
 
 const PRODUCT_IMAGES_BUCKET = 'product-images';
@@ -867,18 +934,36 @@ function _imageRowHTML(src, i) {
     const preview = src
         ? `<img src="${_esc(src)}" alt="" class="img-preview-thumb" onerror="this.style.display='none'">`
         : '<span class="img-preview-fallback">📷</span>';
+    const coverHint = i === 0 ? ' · Copertă' : '';
     return `
-<div class="image-row" data-url="${_esc(src)}">
-    <div class="img-thumb-wrap">${preview}</div>
-    <div class="image-row-meta">
-        <span class="image-row-label">Imagine ${i + 1}</span>
-        <span class="image-row-path" title="${_esc(src)}">${_esc(_shortImageLabel(src))}</span>
-    </div>
-    <button type="button" class="btn-remove-img" aria-label="Șterge imaginea">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+<div class="image-row" data-url="${_esc(src)}" draggable="true">
+    <button type="button" class="btn-img-drag" aria-label="Trage pentru a reordona" title="Trage pentru a reordona">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path stroke-linecap="round" d="M8 7h.01M8 12h.01M8 17h.01M16 7h.01M16 12h.01M16 17h.01"/>
         </svg>
     </button>
+    <div class="img-thumb-wrap">${preview}</div>
+    <div class="image-row-meta">
+        <span class="image-row-label">Imagine ${i + 1}${coverHint}</span>
+        <span class="image-row-path" title="${_esc(src)}">${_esc(_shortImageLabel(src))}</span>
+    </div>
+    <div class="image-row-actions">
+        <button type="button" class="btn-img-move" data-dir="up" aria-label="Mută în sus" title="Mută în sus">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
+            </svg>
+        </button>
+        <button type="button" class="btn-img-move" data-dir="down" aria-label="Mută în jos" title="Mută în jos">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
+        <button type="button" class="btn-remove-img" aria-label="Șterge imaginea">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
 </div>`;
 }
 
@@ -898,13 +983,96 @@ function _bindImageRowEvents(row) {
         row.remove();
         _renumberImageRows();
     });
+
+    row.querySelectorAll('.btn-img-move').forEach(btn => {
+        btn.addEventListener('click', () => {
+            _moveImageRow(row, btn.dataset.dir);
+        });
+    });
+
+    // Pe butoane/handle: nu porni drag accidental pe click; handle e vizual
+    row.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => e.stopPropagation());
+        btn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    });
+}
+
+function _moveImageRow(row, dir) {
+    const list = document.getElementById('edit-images-list');
+    if (!list || !row) return;
+    if (dir === 'up' && row.previousElementSibling) {
+        list.insertBefore(row, row.previousElementSibling);
+    } else if (dir === 'down' && row.nextElementSibling) {
+        list.insertBefore(row.nextElementSibling, row);
+    }
+    _renumberImageRows();
 }
 
 function _renumberImageRows() {
-    document.querySelectorAll('#edit-images-list .image-row').forEach((row, i) => {
+    const rows = document.querySelectorAll('#edit-images-list .image-row');
+    rows.forEach((row, i) => {
         const label = row.querySelector('.image-row-label');
-        if (label) label.textContent = `Imagine ${i + 1}`;
+        if (label) {
+            label.textContent = i === 0 ? `Imagine ${i + 1} · Copertă` : `Imagine ${i + 1}`;
+        }
+        const up = row.querySelector('.btn-img-move[data-dir="up"]');
+        const down = row.querySelector('.btn-img-move[data-dir="down"]');
+        if (up) up.disabled = i === 0;
+        if (down) down.disabled = i === rows.length - 1;
     });
+}
+
+function _bindImagesListSort() {
+    const list = document.getElementById('edit-images-list');
+    if (!list || list.dataset.sortBound) return;
+    list.dataset.sortBound = '1';
+
+    let dragRow = null;
+
+    list.addEventListener('dragstart', (e) => {
+        const row = e.target.closest('.image-row');
+        if (!row || !list.contains(row)) return;
+        // Nu începe drag dacă e pe buton (mutare/ștergere)
+        if (e.target.closest('button') && !e.target.closest('.btn-img-drag')) {
+            e.preventDefault();
+            return;
+        }
+        dragRow = row;
+        row.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'image-row');
+    });
+
+    list.addEventListener('dragend', () => {
+        if (dragRow) dragRow.classList.remove('is-dragging');
+        list.querySelectorAll('.image-row.is-drag-over').forEach(r => r.classList.remove('is-drag-over'));
+        dragRow = null;
+        _renumberImageRows();
+    });
+
+    list.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const over = e.target.closest('.image-row');
+        if (!over || over === dragRow) return;
+        list.querySelectorAll('.image-row.is-drag-over').forEach(r => {
+            if (r !== over) r.classList.remove('is-drag-over');
+        });
+        over.classList.add('is-drag-over');
+
+        const rect = over.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+        if (before) list.insertBefore(dragRow, over);
+        else list.insertBefore(dragRow, over.nextElementSibling);
+    });
+
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        list.querySelectorAll('.image-row.is-drag-over').forEach(r => r.classList.remove('is-drag-over'));
+        _renumberImageRows();
+    });
+
+    _renumberImageRows();
 }
 
 function _bindImageDropzone(product) {
@@ -1017,6 +1185,8 @@ async function _uploadProductImages(files, product) {
         _bindImageRowEvents(list.lastElementChild);
         ok++;
     }
+
+    if (ok) _renumberImageRows();
 
     if (ok && !fail) {
         _setImageUploadStatus(ok === 1 ? 'Imagine adăugată.' : `${ok} imagini adăugate.`);
