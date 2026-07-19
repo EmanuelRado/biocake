@@ -400,18 +400,18 @@ const _LOCAL_PRODUCTS_RAW = [
         },
     },
 
-    /* ── Vegan & Raw ─────────────────────────────────── */
+    /* ── De Post ─────────────────────────────────────── */
     {
         id: 'tort-ciocolata-raw',
         name: 'Tort Ciocolată Raw',
-        category: 'vegan-raw',
+        category: 'de-post',
         price: 190,
         unit: 'kg',
         minQty: 1.2,
         description: 'Bază de curmale și caju, umplutură raw de cacao și avocado. 100% plant-based, fără zahăr rafinat, fără coacere.',
         emoji: '🌱',
         bg: '#E8F7E8',
-        badge: 'Vegan',
+        badge: 'De post',
         weightNote: true,
         images: ['images/products/tort-felie.png', 'images/products/cookies.png', 'images/products/cupcakes.png'],
         ingredients: 'Curmale Medjool, caju crud, cacao raw (pulbere), avocado copt, sirop de arțar pur, ulei de cocos presat la rece, extract de vanilie Bourbon, sare de Himalaya. Toate ingredientele sunt 100% naturale, fără aditivi sau conservanți.',
@@ -432,14 +432,14 @@ const _LOCAL_PRODUCTS_RAW = [
     {
         id: 'tort-fructe-padure-raw',
         name: 'Tort Fructe Pădure Raw',
-        category: 'vegan-raw',
+        category: 'de-post',
         price: 200,
         unit: 'kg',
         minQty: 1.2,
         description: 'Cremă de caju cu coulis de zmeură și mure, pe bază de nuci și curmale. Fără gluten, fără lactate, fără coacere.',
         emoji: '🫐',
         bg: '#F0E8F5',
-        badge: 'Raw Vegan',
+        badge: 'De post',
         weightNote: true,
         images: ['images/products/cookies.png', 'images/products/cupcakes.png', 'images/products/tort-felie.png'],
         ingredients: 'Caju crud, curmale Medjool, nuci crude*, zmeură proaspătă, mure, sirop de agave, ulei de cocos presat la rece, suc de lămâie, extract de vanilie Bourbon, sare de Himalaya.',

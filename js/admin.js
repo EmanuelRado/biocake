@@ -49,13 +49,15 @@ const CATEGORY_LABELS = {
     'torturi-clasice': 'Torturi Clasice',
     'prajituri':       'Prăjituri',
     'office-box':      'Office Box',
-    'vegan-raw':       'Vegan & Raw',
+    'vegan-raw':       'De Post', // legacy slug (migrat → de-post)
+    'de-post':         'De Post',
 };
 const CATEGORY_ICONS = {
     'torturi-clasice': 'cake',
     'prajituri':       'pie',
     'office-box':      'gift',
     'vegan-raw':       'leaf',
+    'de-post':         'leaf',
 };
 
 /* ── Init ────────────────────────────────────────────── */
@@ -732,7 +734,7 @@ function _renderEditForm(p) {
             <option value="torturi-clasice" ${p.category === 'torturi-clasice' ? 'selected' : ''}>Torturi Clasice</option>
             <option value="prajituri" ${p.category === 'prajituri' ? 'selected' : ''}>Prăjituri</option>
             <option value="office-box" ${p.category === 'office-box' ? 'selected' : ''}>Office Box</option>
-            <option value="vegan-raw" ${p.category === 'vegan-raw' ? 'selected' : ''}>Vegan &amp; Raw</option>
+            <option value="de-post" ${p.category === 'de-post' || p.category === 'vegan-raw' ? 'selected' : ''}>De Post</option>
         </select>
     </div>
 
@@ -754,7 +756,7 @@ function _renderEditForm(p) {
 
     <div class="edit-field">
         <label class="edit-label" for="edit-badge">Badge <span class="edit-hint">(opțional)</span></label>
-        <input class="edit-input" type="text" id="edit-badge" value="${_esc(p.badge || '')}" placeholder="Preferat, Nou, Vegan…">
+        <input class="edit-input" type="text" id="edit-badge" value="${_esc(p.badge || '')}" placeholder="Preferat, Nou, De post…">
     </div>
 
     <div class="edit-row-2" id="edit-qty-row">

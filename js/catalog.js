@@ -9,7 +9,7 @@ const CHIP_MAP = {
     'Torturi Clasice': 'torturi-clasice',
     'Prăjituri':       'prajituri',
     'Office Boxes':    'office-box',
-    'Vegan & Raw':     'vegan-raw',
+    'De Post':         'de-post',
 };
 
 /* ── Taguri per categorie ────────────────────────────── */
@@ -17,7 +17,7 @@ const CATEGORY_TAGS = {
     'torturi-clasice': [{ label: '🎂 Tort la comandă', style: 'choco' }],
     'prajituri':       [{ label: '🍰 Prăjitură', style: '' }],
     'office-box':      [{ label: '🎁 Office Box', style: 'pink' }, { label: '🎉 Aniversare birou', style: '' }],
-    'vegan-raw':       [{ label: '🌱 Plant-based', style: 'green' }, { label: '✨ Raw Vegan', style: 'green' }],
+    'de-post':         [{ label: '🌱 De post', style: 'green' }, { label: '✨ Fără animale', style: 'green' }],
 };
 
 const SHARED_TAGS = [

@@ -196,19 +196,19 @@ INSERT INTO products (slug, name, category, price, unit, min_qty, step, descript
  '{"per":"100g","energy_kcal":340,"energy_kj":1423,"fat":18,"saturated_fat":10,"carbs":40,"sugars":28,"fiber":1.0,"protein":5.5,"salt":0.15}'::jsonb,
  '🎉', '#FEE8F1'),
 
--- Vegan & Raw
-('tort-ciocolata-raw', 'Tort Ciocolată Raw', 'vegan-raw', 190, 'kg', 1.2, 0.5,
+-- De Post
+('tort-ciocolata-raw', 'Tort Ciocolată Raw', 'de-post', 190, 'kg', 1.2, 0.5,
  'Bază de curmale și caju, umplutură raw de cacao și avocado. 100% plant-based, fără zahăr rafinat, fără coacere.',
- 'Vegan', true,
+ 'De post', true,
  'Curmale Medjool, caju crud, cacao raw (pulbere), avocado copt, sirop de arțar pur, ulei de cocos presat la rece, extract de vanilie Bourbon, sare de Himalaya. Toate ingredientele sunt 100% naturale, fără aditivi sau conservanți.',
  ARRAY['Nuci (caju)'],
  ARRAY['images/products/tort-felie.png', 'images/products/cookies.png', 'images/products/cupcakes.png'],
  '{"per":"100g","energy_kcal":340,"energy_kj":1423,"fat":22,"saturated_fat":11,"carbs":32,"sugars":24,"fiber":4.5,"protein":5.8,"salt":0.05}'::jsonb,
  '🌱', '#E8F7E8'),
 
-('tort-fructe-padure-raw', 'Tort Fructe Pădure Raw', 'vegan-raw', 200, 'kg', 1.2, 0.5,
+('tort-fructe-padure-raw', 'Tort Fructe Pădure Raw', 'de-post', 200, 'kg', 1.2, 0.5,
  'Cremă de caju cu coulis de zmeură și mure, pe bază de nuci și curmale. Fără gluten, fără lactate, fără coacere.',
- 'Raw Vegan', true,
+ 'De post', true,
  'Caju crud, curmale Medjool, nuci crude*, zmeură proaspătă, mure, sirop de agave, ulei de cocos presat la rece, suc de lămâie, extract de vanilie Bourbon, sare de Himalaya.',
  ARRAY['Nuci (caju, nuci)'],
  ARRAY['images/products/cookies.png', 'images/products/cupcakes.png', 'images/products/tort-felie.png'],
