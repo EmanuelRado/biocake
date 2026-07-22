@@ -800,7 +800,7 @@ function _renderEditForm(p) {
 
     <div class="edit-field">
         <label class="edit-label" for="edit-ingredients">Ingrediente</label>
-        <textarea class="edit-input edit-textarea" id="edit-ingredients" rows="4" placeholder="făină, zahăr, ouă…">${_esc(p.ingredients || '')}</textarea>
+        <textarea class="edit-input edit-textarea" id="edit-ingredients" rows="4" placeholder="făină, zahăr brut, ouă…">${_esc(p.ingredients || '')}</textarea>
     </div>
 
     <div class="edit-field">

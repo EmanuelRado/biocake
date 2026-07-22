@@ -3,10 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioCake | Cofetărie Artizanală Premium în București</title>
-    <meta name="description" content="Comandă online torturi și prăjituri clasice, tradiționale și moderne în București & Ilfov. Deserturi premium realizate din ingrediente 100% naturale de un pastry chef cu experiență.">
+    <title>BioCake | Torturi artizanale fără zahăr rafinat — București</title>
+    <meta name="description" content="Torturi și prăjituri artizanale în București &amp; Ilfov, fără zahăr rafinat. Îndulcim cu zahăr brut, xilitol, zahăr de cocos, sirop de agave, curmale, miere — după rețetă. Livrare la comandă.">
+    <meta name="keywords" content="tort artizanal Bucuresti, prajituri fara zahar rafinat, cofetarie naturala, office box Bucuresti, tort de post, BioCake">
+    <link rel="canonical" href="https://biocake.ro/">
+    <meta name="theme-color" content="#FC6D9F">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ro_RO">
+    <meta property="og:url" content="https://biocake.ro/">
+    <meta property="og:site_name" content="BioCake">
+    <meta property="og:title" content="BioCake | Fără zahăr rafinat — deserturi artizanale București">
+    <meta property="og:description" content="Cofetărie artizanală fără zahăr rafinat. Indulcitori naturali după rețetă. Livrare București &amp; Ilfov.">
+    <meta property="og:image" content="https://biocake.ro/images/hero_cake.png">
+    <meta property="og:image:alt" content="Tort artizanal BioCake">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BioCake | Fără zahăr rafinat">
+    <meta name="twitter:description" content="Deserturi artizanale cu indulcitori naturali. Livrare București &amp; Ilfov.">
+    <meta name="twitter:image" content="https://biocake.ro/images/hero_cake.png">
+
     <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+
+    <!-- Fonts non-blocking -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap">
+    </noscript>
+
     <link rel="stylesheet" href="css/styles.css">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Bakery",
+      "name": "BioCake",
+      "url": "https://biocake.ro/",
+      "image": "https://biocake.ro/images/hero_cake.png",
+      "description": "Cofetărie artizanală fără zahăr rafinat. Torturi, prăjituri și office boxes cu indulcitori naturali, livrate în București și Ilfov.",
+      "servesCuisine": "Deserturi artizanale",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "București",
+        "addressCountry": "RO"
+      },
+      "areaServed": ["București", "Ilfov"],
+      "email": "contact@biocake.ro",
+      "sameAs": [
+        "https://instagram.com/biocake.ro",
+        "https://facebook.com/biocake.ro"
+      ]
+    }
+    </script>
+
     <!-- Supabase JS Client (UMD) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -18,7 +72,7 @@
     <header class="header" id="header">
         <div class="container nav-container">
             <!-- Brand Logo -->
-            <a href="#" class="logo-link">
+            <a href="#acasa" class="logo-link">
                 <img src="images/logo.png" alt="BioCake Logo" class="logo-img" id="logo">
             </a>
 
@@ -45,11 +99,12 @@
                 <a href="#catalog" class="btn-cta">Comandă Acum</a>
 
                 <!-- Hamburger menu for mobile -->
-                <div class="hamburger" id="hamburger" aria-label="Meniu mobil">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
+                <button type="button" class="hamburger" id="hamburger"
+                        aria-label="Meniu" aria-expanded="false" aria-controls="nav-menu">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </button>
             </div>
         </div>
     </header>
@@ -69,7 +124,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                     </svg>
-                    <span>Ingrediente 100% Naturale &amp; Calitate Premium</span>
+                    <span>Fără zahăr rafinat · Indulcitori naturali</span>
                 </div>
 
                 <h1 class="hero-title">
@@ -77,7 +132,8 @@
                 </h1>
 
                 <p class="hero-description">
-                    Torturi și prăjituri artizanale clasice, tradiționale și moderne, preparate manual din ingrediente proaspete și naturale. Redescoperă gustul autentic premium.
+                    Torturi și prăjituri artizanale, preparate manual — <strong>fără zahăr alb rafinat</strong>.
+                    Îndulcim după rețetă cu zahăr brut, xilitol, zahăr de cocos, siropuri naturale sau miere.
                 </p>
 
                 <blockquote class="hero-quote">
@@ -102,8 +158,8 @@
                     </div>
                     <div class="trust-divider" aria-hidden="true"></div>
                     <div class="trust-item">
-                        <span class="trust-number">100%</span>
-                        <span class="trust-label">Natural</span>
+                        <span class="trust-number">0</span>
+                        <span class="trust-label">Zahăr rafinat</span>
                     </div>
                     <div class="trust-divider" aria-hidden="true"></div>
                     <div class="trust-item">
@@ -129,7 +185,12 @@
                 </div>
 
                 <div class="hero-image-frame">
-                    <img src="images/hero_cake.png" alt="Tort artizanal BioCake decorat cu fructe și flori de zahăr" class="hero-image">
+                    <img src="images/hero_cake.png"
+                         alt="Tort artizanal BioCake, preparat fără zahăr rafinat"
+                         class="hero-image"
+                         width="832" height="1040"
+                         fetchpriority="high"
+                         decoding="async">
                     <div class="hero-image-overlay" aria-hidden="true"></div>
                 </div>
 
@@ -140,8 +201,8 @@
                         </svg>
                     </div>
                     <div>
-                        <strong>Livrare București &amp; Ilfov</strong>
-                        <span>Direct la ușa ta</span>
+                        <strong>Fără zahăr rafinat</strong>
+                        <span>Indulcitori naturali după rețetă</span>
                     </div>
                 </div>
             </div>
@@ -156,7 +217,7 @@
             <div class="section-header">
                 <span class="section-eyebrow">Meniu Artizanal</span>
                 <h2 class="section-title">Rețete Clasice, Moderne &amp; Tradiționale</h2>
-                <p class="section-desc">Fiecare desert este realizat manual din ingrediente proaspete și naturale, la cele mai înalte standarde. Alege categoria preferată pentru a începe cumpărăturile.</p>
+                <p class="section-desc">Fiecare desert este realizat manual, fără zahăr rafinat — cu indulcitori aleși după rețetă. Alege categoria preferată pentru a începe cumpărăturile.</p>
             </div>
 
             <!-- Category Chips Placeholder -->
@@ -347,6 +408,43 @@
     </section>
 
     <!-- ==========================================================================
+       Despre Noi
+       ========================================================================== -->
+    <section class="section section-light" id="despre">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-eyebrow">Povestea noastră</span>
+                <h2 class="section-title">Despre <em>BioCake</em></h2>
+                <p class="section-desc">
+                    BioCake este cofetăria artizanală a unei pastry chef cu o viață de experiență.
+                    Preparăm exclusiv la comandă torturi, prăjituri și office boxes — clasice, moderne și de post —
+                    și livrăm cu grijă în București &amp; Ilfov.
+                </p>
+            </div>
+
+            <div class="about-philosophy">
+                <div class="about-philosophy-main">
+                    <span class="about-philosophy-eyebrow">Filozofia noastră</span>
+                    <h3 class="about-philosophy-title">Dulce, dar <em>fără zahăr rafinat</em></h3>
+                    <p class="about-philosophy-text">
+                        Nu folosim zahăr alb rafinat. Fiecare rețetă își alege indulcitorul potrivit —
+                        pentru gust autentic, textură corectă și o dulceață mai curată.
+                    </p>
+                </div>
+                <ul class="sweetener-list" aria-label="Indulcitori folosiți">
+                    <li>Zahăr brut</li>
+                    <li>Zahăr de mesteacăn (xilitol)</li>
+                    <li>Zahăr de cocos</li>
+                    <li>Sirop de agave</li>
+                    <li>Sirop de curmale</li>
+                    <li>Miere</li>
+                    <li>și alții, după rețetă</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================================
        Footer / Contact / Legal
        ========================================================================== -->
     <footer class="footer" id="contact">
@@ -356,7 +454,8 @@
                 <div class="footer-brand">
                     <img src="images/logo.png" alt="BioCake Logo" class="footer-logo">
                     <p class="footer-text">
-                        BioCake transformă deserturile artizanale în experiențe gourmet. Preparăm exclusiv la comandă și livrăm cu grijă în București și Ilfov.
+                        Deserturi artizanale <strong>fără zahăr rafinat</strong>, cu indulcitori naturali aleși după rețetă.
+                        Preparăm exclusiv la comandă și livrăm în București și Ilfov.
                     </p>
                     <div class="footer-socials">
                         <a href="https://instagram.com/biocake.ro" class="social-link" aria-label="Instagram BioCake">
@@ -410,7 +509,7 @@
                         </div>
                         <div class="contact-info">
                             <h5>Telefon Comenzi</h5>
-                            <p><a href="tel:+40700000000">+40 700 000 000</a></p>
+                            <p><a href="tel:+40700000000" id="contact-phone-link">+40 700 000 000</a></p>
                         </div>
                     </div>
 
@@ -444,11 +543,11 @@
        ========================================================================== -->
     <div class="cart-overlay" id="cart-overlay" aria-hidden="true"></div>
 
-    <aside class="cart-drawer" id="cart-drawer" aria-label="Coș de cumpărături" role="dialog">
+    <aside class="cart-drawer" id="cart-drawer" aria-label="Coș de cumpărături" role="dialog" aria-modal="false" aria-labelledby="cart-drawer-title">
 
         <!-- Drawer Header -->
         <div class="cart-drawer-header">
-            <h2 class="cart-drawer-title">Coșul tău</h2>
+            <h2 class="cart-drawer-title" id="cart-drawer-title">Coșul tău</h2>
             <button class="cart-close-btn" id="cart-close" aria-label="Închide coșul">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -510,7 +609,8 @@
         </div>
     </aside>
 
-    <!-- JS Modules — ordinea contează: supabase → data → cart → catalog → cart-ui → orders → checkout → app -->
+    <!-- JS Modules — ordinea contează: config → supabase → data → cart → catalog → cart-ui → orders → checkout → app -->
+    <script src="js/config.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/data.js"></script>
     <script src="js/cart.js"></script>

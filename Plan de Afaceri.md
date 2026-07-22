@@ -1,7 +1,7 @@
 # 📊 Plan de Afaceri: BioCake
 
 > [!abstract] Sinteză
-> BioCake este o cofetărie online premium din București, specializată în deserturi artizanale clasice, tradiționale și moderne de înaltă calitate, integrând în catalog și opțiuni vegane/raw-vegane. Afacerea valorifică experiența de o viață a fondatoarei ca pastry chef și colaborarea existentă cu restaurantul vegan "Sublimmme". Modelul operațional este exclusiv digital, bazat pe **livrare la domiciliu/birou** în București, fără punct de ridicare fizic, optimizând astfel costurile fixe.
+> BioCake este o cofetărie online premium din București, specializată în deserturi artizanale clasice, tradiționale și moderne de înaltă calitate, cu o categorie dedicată **De Post**. Afacerea valorifică experiența de o viață a fondatoarei ca pastry chef și colaborarea existentă cu restaurantul vegan "Sublimmme". Modelul operațional este exclusiv digital, bazat pe **livrare la domiciliu/birou** în București, fără punct de ridicare fizic, optimizând astfel costurile fixe.
 
 ---
 
@@ -9,9 +9,9 @@
 
 - **Misiune**: Să aducem bucuria deserturilor artizanale premium (clasice, moderne și tradiționale) de înaltă calitate direct la ușa clienților, oferind rețete rafinate realizate exclusiv din ingrediente naturale.
 - **Valori**:
-  - **Calitate Fără Compromis**: Utilizarea de ingrediente naturale, proaspete și premium, fără premixuri industriale, coloranți artificiali sau conservanți.
+  - **Calitate Fără Compromis**: Utilizarea de ingrediente naturale, proaspete și premium, **fără zahăr rafinat** (îndulcitori naturali după rețetă: zahăr brut, xilitol, zahăr de cocos, siropuri, miere etc.), fără premixuri industriale, coloranți artificiali sau conservanți.
   - **Tradiție & Rafinament Modern**: Îmbinarea tehnicilor clasice, consacrate de cofetărie cu rețete inovatoare de patiserie modernă.
-  - **Diversitate & Incluziune**: Integrarea de opțiuni vegane, raw-vegane și fără gluten în portofoliu, fără ca acestea să definească în exclusivitate brandul.
+  - **Diversitate & Incluziune**: Integrarea de opțiuni **de post** și fără gluten în portofoliu, fără ca acestea să definească în exclusivitate brandul.
 
 ---
 
@@ -20,7 +20,7 @@
 ### Segmentul de Clienți 🎯
 1. **Iubitorii de Deserturi Premium**: Persoane care caută prăjituri clasice, tradiționale (de ex. cozonaci artizanali, tarte) și moderne (de ex. mousse-uri, entremets) realizate la standarde înalte de calitate.
 2. **Organizatorii de Evenimente & Familiile**: Clienți care comandă torturi personalizate pentru zile de naștere, nunți, botezuri și candy bar-uri.
-3. **Consumatorii cu Preferințe/Restricții Alimentare**: Persoane care caută deserturi vegane, raw-vegane sau fără lactoză/gluten din considerente medicale sau de stil de viață.
+3. **Consumatorii cu Preferințe/Restricții Alimentare**: Persoane care caută deserturi de post sau fără lactoză/gluten din considerente medicale, religioase sau de stil de viață.
 4. **Corporates / B2B**: Companii din București care comandă *Office Boxes* pentru aniversări interne sau evenimente corporate.
 
 ### Concurența ⚖️
@@ -28,7 +28,7 @@
 - **Branduri vegane/bio existente**: Focus exclusiv pe sănătos/vegan, adesea în detrimentul gamei tradiționale sau cu o estetică limitată.
 - **Diferențiatorul BioCake**:
   - Calitatea de cofetărie artizanală condusă de un pastry chef cu zeci de ani de experiență în cofetăria tradițională și modernă.
-  - Capacitatea de a livra atât gustul nostalgic clasic, cât și alternative moderne (inclusiv vegan/raw-vegan testate prin colaborarea cu Sublimmme).
+  - Capacitatea de a livra atât gustul nostalgic clasic, cât și alternative moderne (inclusiv deserturi **de post**, testate prin colaborarea cu Sublimmme).
   - Model exclusiv de livrare, permițând prețuri competitive datorită lipsei costurilor de chirie pentru spațiu comercial stradal.
 
 ---
@@ -42,7 +42,7 @@ graph TD
     A --> D[Comenzi Speciale]
 
     B --> B1[Clasic & Modern]
-    B --> B2[Vegan / Raw-Vegan]
+    B --> B2[De Post]
 
     C --> C1[Mix Asortat]
     C --> C2[Un singur sortiment]
@@ -55,7 +55,7 @@ graph TD
 
 ### 3.1. Torturi & Prăjituri Standard
 * **Torturi Clasice & Moderne**: Tort Fraisier, Tort Ciocolată Belgiană, Tort Caramel & Nucă, Tort Red Velvet.
-* **Torturi Vegan / Raw Vegan**: Tort Ciocolată Raw (cacao raw, avocado, caju, curmale), Tort Fructe Pădure Raw.
+* **Torturi De Post**: Tort Ciocolată Raw (cacao raw, avocado, caju, curmale), Tort Fructe Pădure Raw.
 * **Prăjituri la bucată**: Tartă cu Fructe de sezon, Brownie Ciocolată Belgiană cu nuci pecane, Mini Ecler Vanilie, Cheesecake Fructe Pădure.
 
 ### 3.2. Office Boxes (Pachete pentru Birou)
@@ -100,4 +100,4 @@ graph TD
 
 * **Promovare Încrucișată (Cross-Promotion)**: Flyere și branding plasate în restaurantul *Sublimmme* pentru a direcționa clienții fideli ai restaurantului către magazinul online BioCake.
 * **Social Media (Visual Storytelling)**: Accent pe procesul de producție (reels cu mama preparând torturile), evidențiind calitatea ingredientelor naturale și expertiza de pastry chef.
-* **Google Local & SEO**: Optimizare SEO pe termeni precum „tort vegan Bucuresti”, „prajituri raw vegane livrare”, „office box Bucuresti”.
+* **Google Local & SEO**: Optimizare SEO pe termeni precum „tort de post Bucuresti”, „prajituri de post livrare”, „office box Bucuresti” (plus variante căutate: vegan/raw, unde e relevant).

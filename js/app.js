@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     initHeaderScroll();
     initMobileNav();
+    initContactLinks();
     initCartUI();    // Drawer coș
     initCheckout();  // Overlay checkout (Etapa 4)
     initCatalog();   // Catalog + filtrare (async Supabase)
@@ -13,6 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Restaurează badge-ul coșului din localStorage la reload
     updateCartBadge(getCartCount());
 });
+
+/* ── Contact din config.js ───────────────────────────── */
+function initContactLinks() {
+    const c = window.BIOCAKE_CONTACT;
+    if (!c) return;
+    const phoneLink = document.getElementById('contact-phone-link');
+    if (phoneLink) {
+        phoneLink.href = `tel:${c.phoneTel}`;
+        phoneLink.textContent = c.phoneDisplay;
+    }
+}
 
 /* ── Header scroll reactiv ───────────────────────────── */
 function initHeaderScroll() {
@@ -38,6 +50,13 @@ function initMobileNav() {
     const navMenu   = document.getElementById('nav-menu');
     if (!hamburger || !navMenu) return;
 
+    function closeNav() {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    }
+
     hamburger.addEventListener('click', () => {
         const isOpen = hamburger.classList.toggle('active');
         navMenu.classList.toggle('active', isOpen);
@@ -46,18 +65,12 @@ function initMobileNav() {
     });
 
     navMenu.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+        link.addEventListener('click', closeNav);
     });
 
     document.addEventListener('click', (e) => {
         if (header && !header.contains(e.target) && navMenu.classList.contains('active')) {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
-            document.body.style.overflow = '';
+            closeNav();
         }
     });
 }

@@ -46,7 +46,7 @@ gantt
   1. **Header**: Logo, meniu rapid de categorii și indicatorul coșului de cumpărături cu efect de micro-animație.
   2. **Hero Section**: Slogan primitor, o imagine reprezentativă apetisantă și CTA principal "Vezi meniul".
   3. **Categorii Rapide**: Tab-uri interactive pentru filtrarea rapidă (Torturi, Prăjituri, Office Boxes, Comenzi Custom).
-  4. **Grid Produse**: Carduri de produse continând poze premium, ingrediente, alerte specifice (Ex: "Fără Gluten", "Raw-Vegan"), preț și buton de adăugare în coș.
+  4. **Grid Produse**: Carduri de produse continând poze premium, ingrediente, alerte specifice (Ex: "Fără Gluten", "De post"), preț și buton de adăugare în coș.
   5. **Secțiune Comenzi Custom**: Formular intuitiv pentru Candy Bar și Torturi Personalizate.
   6. **Footer**: Programul de livrare, politica de transport în București și datele legale obligatorii.
 
@@ -90,10 +90,7 @@ gantt
   - Creare produs nou cu slug auto-generat.
   - Ștergere produs cu confirmare.
 * **Fișiere**: `admin.html`, `css/admin.css`, `js/admin.js`
-* **⚠️ Migrare SQL necesară** (pentru câmpul `max_qty` greutăți torturi):
-  ```sql
-  ALTER TABLE products ADD COLUMN IF NOT EXISTS max_qty numeric(5,2) DEFAULT 2.4;
-  ```
+* **⚠️ Migrare SQL `max_qty`:** ~~necesară~~ — **aplicată** (2026-07-18).
 
 ### ✅ Etapa 5b: PWA Admin + Notificări Push 🔔 — COMPLETAT (2026-07-12)
 * **PWA instalabilă**: `manifest.webmanifest`, `sw.js`, iconițe 192/512/maskable, meta iOS.
@@ -101,7 +98,7 @@ gantt
 * **Banner instalare**: hint „Adaugă pe ecranul principal" (Android: buton Instalează; iOS: instrucțiuni Share).
 * **Push la comandă nouă**:
   1. Admin activează clopoțelul → abonament salvat în `push_subscriptions`.
-  2. Client plasează comandă → INSERT în `orders`.
+  2. Client plasează comandă → RPC `place_order` → INSERT în `orders` (trigger webhook).
   3. Database Webhook → Edge Function `notify-new-order` → push pe toate dispozitivele.
 * **Setup Supabase** (manual în dashboard):
   - Rulează `supabase-push.sql`.
@@ -121,8 +118,18 @@ gantt
   - CHECK constraint statusuri: pending | confirmed | paid | delivered.
   - Fișier: `supabase-p0-security.sql` (aplicat pe Supabase).
 * **`max_qty` ✅**: coloană în DB + legată în `admin.js`.
+* **Comenzi RPC `place_order` ✅ 2026-07-19**:
+  - Prețuri din `products`, insert atomic, validare livrare pe server.
+  - Fără INSERT anon direct pe `orders` / `order_items`.
+  - Fișier: `supabase-place-order.sql`.
+* **Catalog / UX post-audit ✅ 2026-07-19…22**:
+  - Categorie **De Post** (`de-post`), `piece_grams`, escape XSS, pills greutate din produs, selector cutie, a11y drawer, `js/config.js`.
+  - Mesaj brand **fără zahăr rafinat** (hero, #despre, footer) + SEO/OG/JSON-LD + fonts non-blocking.
 * **Audit Tehnic & SEO** (rămâne):
-  - Meta tags descriptive pentru zona București/Ilfov.
-  - Conversie imagini în WebP pentru viteză pe 3G/4G mobil.
-  - Audit Lighthouse (target: >90 pe mobil).
-  - Testare pe Android și iOS.
+  - Conversie imagini WebP + resize la upload.
+  - Telefon/WhatsApp real în `js/config.js`.
+  - Netopia Payments.
+  - Lighthouse mobil >90 (după WebP).
+
+> [!note] Documentație
+> Actualizează `CURSOR_HANDOVER.md` + `Arhitectura Sistemului.md` + `BioCake.md` la fiecare schimbare tehnică (regulă `.cursor/rules/biocake-docs.mdc`).

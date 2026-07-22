@@ -4,8 +4,7 @@
  */
 
 /* ── Config ──────────────────────────────────────────── */
-// TODO: înlocuiește cu numărul de WhatsApp al cofetăriei (format: 40XXXXXXXXX)
-const CHECKOUT_WHATSAPP = '40700000000';
+const CHECKOUT_WHATSAPP = (window.BIOCAKE_CONTACT && window.BIOCAKE_CONTACT.whatsapp) || '40700000000';
 
 const DELIVERY_WINDOW = {
     startHour: 8,   // 08:00
@@ -354,8 +353,41 @@ async function _handleSubmit(e) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `Plasează Comanda`;
         errorBox.style.display = 'block';
-        errorBox.innerHTML = `<p>• A apărut o eroare tehnică. Te rugăm să ne contactezi direct pe WhatsApp.</p>`;
+        const raw = (err && (err.message || err.details || err.hint)) || '';
+        const friendly = _friendlyOrderError(raw);
+        const esc = typeof _escHtml === 'function' ? _escHtml : (s => String(s));
+        errorBox.innerHTML = `<p>• ${esc(friendly)}</p>`;
     }
+}
+
+function _friendlyOrderError(raw) {
+    const msg = String(raw || '');
+    const known = [
+        'Nume invalid',
+        'Telefon invalid',
+        'Zona de livrare invalida',
+        'Adresa invalida',
+        'Data si ora',
+        'Cosul este gol',
+        'Nu livram duminica',
+        'Ora de livrare',
+        'Livrarea trebuie',
+        'Produs indisponibil',
+        'Cantitate sub minim',
+        'Cantitate peste maxim',
+        'Linie de comanda',
+    ];
+    if (known.some(k => msg.includes(k))) {
+        // Mesaje RPC (fără diacritice) → variantă RO pe UI
+        if (msg.includes('Nu livram duminica')) return 'Nu livrăm duminica. Alege o zi între luni și sâmbătă.';
+        if (msg.includes('Livrarea trebuie')) return 'Livrarea trebuie să fie la minimum 48 de ore.';
+        if (msg.includes('Ora de livrare')) return 'Ora de livrare trebuie să fie între 08:00 și 20:00 (din 30 în 30 de minute).';
+        if (msg.includes('Cosul este gol')) return 'Coșul este gol.';
+        if (msg.includes('Produs indisponibil')) return 'Un produs din coș nu mai este disponibil. Reîncarcă pagina.';
+        if (msg.includes('Cantitate sub minim')) return 'Cantitatea este sub minimul de comandă pentru un produs.';
+        return msg;
+    }
+    return 'A apărut o eroare tehnică. Te rugăm să ne contactezi direct pe WhatsApp.';
 }
 
 /* ── Success screen ──────────────────────────────────── */

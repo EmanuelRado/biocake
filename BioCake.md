@@ -2,12 +2,12 @@
 project_name: BioCake
 client: BioCake
 type: Magazin Online Complet
-status: "🟡 În lucru (Etapa 6 — Lansare)"
+status: "🟡 În lucru (Etapa 6 — post-audit Ziua 1–2)"
 date_created: 2026-07-03
-date_modified: 2026-07-18
+date_modified: 2026-07-19
 limba: RO
 locatie: București, România
-telefon: "+40 700 000 000"
+telefon: "+40 700 000 000"  # Actualizează în js/config.js + aici când ai numărul real
 email: "contact@biocake.ro"
 tags:
   - proiect/landing-page
@@ -24,9 +24,9 @@ tags:
 | **Tip Proiect** | Magazin Online Complet (Frontend + Backend + Gestiune Stoc) |
 | **Client** | BioCake (Dream project pentru mama lui Emi) |
 | **Locație** | Livrare exclusivă în București (Fără ridicare personală) |
-| **Status** | 🟡 Etapa 6: domeniu + P0 securitate done — rămân SEO / conținut |
+| **Status** | 🟡 Etapa 6: Ziua 3 (SEO/mesaj brand) — rămân telefon real, WebP pipeline, Netopia |
 | **Data creare** | 2026-07-03 |
-| **Ultima actualizare** | 2026-07-18 |
+| **Ultima actualizare** | 2026-07-19 |
 | **URL live** | https://biocake.ro |
 
 ---
@@ -60,10 +60,13 @@ tags:
 **BioCake** este visul unei cofetărese cu o viață de experiență, care își dorește propria afacere independentă. În prezent, brandul colaborează cu restaurantul vegan **"Sublimmme"**, preparând deserturile lor vegane și raw-vegane, însă pentru propriul brand **BioCake** se concentrează pe o gamă completă de **prăjituri clasice, tradiționale și moderne**, adaptate tuturor gusturilor, fără a se poziționa ca un brand exclusiv vegan.
 
 Pasul următor este lansarea unui **magazin online premium**, dedicat vânzării directe către consumatorul final din București. Serviciul va funcționa **exclusiv pe bază de livrare**, oferind:
-1. **Torturi & Prăjituri standard** (clasice, moderne, cu opțiuni vegane/raw-vegane integrate din portofoliu, dar fără branding exclusiv vegan).
+1. **Torturi & Prăjituri standard** (clasice, moderne; categorie **De Post** pentru opțiuni fără produse de origine animală).
 2. **Office Boxes** — Cutii cu mini-prăjituri artizanale în 4 mărimi (6 / 12 / 18 / 24 buc), mix asortat sau un singur sortiment. Inspirate de tradiția românească de a aduce dulciuri la birou de ziua ta.
 3. **Comenzi Speciale** — Candy bar-uri pentru evenimente, torturi personalizate și pachete aniversare. **Toate comenzile speciale necesită un avans de 50%.**
-4. **Filozofie Ingrediente**: Toate preparatele sunt realizate complet **fără zahăr** (folosind doar îndulcitori mai puțin nocivi) și se pune un accent deosebit pe caracterul **artizanal** și **făcut în casă**. *(Notat pe 18.07.2026)*
+4. **Filozofie Ingrediente**: **Fără zahăr rafinat** (zahăr alb). În funcție de rețetă se folosesc indulcitori naturali: zahăr brut, zahăr de mesteacăn (xilitol), zahăr de cocos, sirop de agave, sirop de curmale, miere etc. Accent pe caracter **artizanal** și **făcut în casă**. *(Actualizat 22.07.2026 — nu e „fără zahăr”, ci fără zahăr **rafinat**.)*
+
+### Categorii tehnice (slug DB)
+`torturi-clasice` · `prajituri` · `office-box` · `de-post`
 
 ---
 
@@ -75,7 +78,8 @@ Designul magazinului se bazează pe identitatea logo-ului oficial, completată c
 
 | Culoare | Hex | Rol în Design |
 | :--- | :--- | :--- |
-| 💖 Roz BioCake | `#FC6D9F` | Culoarea primară din logo — accente, butoane, elemente active |
+| 💖 Roz brand | `#FC6D9F` | Accente, badge-uri, soft UI |
+| 💗 Roz | `#FC6D9F` | Brand + butoane CTA |
 | 💚 Verde Natural | `#37B536` | Ingrediente naturale, badge-uri de calitate |
 | 🟤 Ciocolată profundă | `#3D2014` | Text principal, titluri, fundal footer |
 | 🍫 Ciocolată medie | `#6B3A2A` | Text secundar, nuanțe de profunzime |
@@ -112,7 +116,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 
 - [x] **Meniu detaliat**: Listă cu produse, descrieri, ingrediente/alergeni și prețuri (implementat și seed-uit în Supabase).
 - [ ] **Fotografii reale**: Poze de rezoluție mare cu preparatele reale (momentan se folosesc imagini placeholder premium).
-- [ ] **Telefon real de comenzi**: Numărul de telefon actual al mamei pentru afacere.
+- [ ] **Telefon real de comenzi**: Numărul real — setează în `js/config.js` (`phoneDisplay`, `phoneTel`, `whatsapp`).
 - [ ] **Email real**: Adresa de email dedicată comenzilor (ex: comenzi@biocake.ro).
 - [x] **Prețuri finale**: Confirmarea prețurilor orientative pentru Office Boxes (6/12/18/24 buc) - implementat.
 - [x] **Logo**: Fișier PNG transparent, salvat local în [[logo.png|images/logo.png]].
@@ -126,6 +130,10 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Migrare SQL `max_qty`**: coloana există în DB; legată în `admin.js` (SELECT + UPDATE) ✅ 2026-07-18.
 - [x] **Securitate P0**: `is_admin()` pe `admin@biocake.ro` — RLS comenzi/produse/push/storage; CHECK status; grants pe coloane. ✅ 2026-07-18.
 - [x] **Domeniu producție**: `https://biocake.ro` pe Netlify DNS (nsone) — live ✅ 2026-07-18.
+- [x] **Categorie De Post**: ex-Vegan & Raw → slug `de-post` ✅ 2026-07-19.
+- [x] **`piece_grams`**: gramaj per bucată în admin + UI ✅ 2026-07-19.
+- [x] **RPC `place_order`**: preț din DB + insert atomic; fără INSERT anon pe tabele ✅ 2026-07-19.
+- [x] **Audit pre-lansare Ziua 1–2**: XSS escape, a11y drawer/CTA, pills greutate din produs, selector cutie ✅ 2026-07-19.
 
 ---
 
@@ -134,6 +142,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Buton Produs Activ**: Apare ca un checkbox clasic, nu funcționează checkbox-ul stilizat creat de Cursor. *(Notat pe 08.07.2026)* ✅ 2026-07-13
 - [x] **Opțiuni Greutate Torturi**: Nu există opțiuni pentru selectarea greutății la torturi (1.2kg, 1.8kg, 2.4kg, etc.). *(Notat pe 08.07.2026)* ✅ 2026-07-13
 - [x] **Greutate Aproximativă**: Câmpul apare completat cu `true` pentru torturi (trebuie verificat dacă activează greșit notificarea de marjă de 100g). *(Notat pe 08.07.2026)* ✅ 2026-07-13
+- [x] **Catalog nu se încarcă**: `WEIGHT_OPTIONS` duplicat în `data.js` (SyntaxError). ✅ 2026-07-19
 
 ---
 
@@ -141,5 +150,9 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 
 - [ ] **Conturi Clienți / Autofill**: Analizarea posibilității de creare cont sau implementarea unei funcții de autofill pentru următoarele comenzi (cu scopul colectării datelor de marketing și simplificării checkout-ului). *(Notat pe 10.07.2026)*
 - [x] **Aplicație Admin dedicată**: Transformarea panoului de administrare într-o aplicație de sine stătătoare (PWA dedicat / Aplicație Mobilă). *(Notat pe 10.07.2026)* ✅ 2026-07-13
-- [ ] **Reordonare Imagini**: Posibilitatea de a modifica manual ordinea imaginilor din galeria unui produs (în panoul de admin). *(Notat pe 15.07.2026)*
+- [x] **Reordonare Imagini**: Reordine în admin (săgeți / drag) — prima imagine = copertă. ✅ 2026-07
+- [x] **SEO / OG / fonts non-blocking / mesaj fără zahăr rafinat** — Ziua 3 (parțial) ✅ 2026-07-22
+- [ ] **Pipeline WebP / resize la upload** — rămâne
+- [ ] **Netopia Payments** — avans automat
+- [ ] **Rate-limit comenzi** pe RPC public
 

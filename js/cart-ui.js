@@ -4,6 +4,8 @@
  */
 
 /* ── Inițializare ────────────────────────────────────── */
+let _cartFocusBefore = null;
+
 function initCartUI() {
     // Deschide drawer la click pe butonul din header
     document.getElementById('btn-cart')?.addEventListener('click', openCartDrawer);
@@ -14,6 +16,16 @@ function initCartUI() {
     // Închide la butonul X
     document.getElementById('cart-close')?.addEventListener('click', closeCartDrawer);
 
+    // Escape → închide drawer
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const drawer = document.getElementById('cart-drawer');
+        if (drawer?.classList.contains('cart-drawer--open')) {
+            e.preventDefault();
+            closeCartDrawer();
+        }
+    });
+
     // Selector zonă livrare
     document.getElementById('zone-select')?.addEventListener('change', e => {
         saveZone(e.target.value);
@@ -23,7 +35,7 @@ function initCartUI() {
     // Buton "Continuă spre comandă" → deschide checkout
     document.getElementById('cart-checkout-btn')?.addEventListener('click', () => {
         closeCartDrawer();
-        setTimeout(() => openCheckout(), 320); // mic delay după animația drawer
+        setTimeout(() => openCheckout(), 180);
     });
 
     // Re-randează coșul la orice schimbare
@@ -35,16 +47,32 @@ function initCartUI() {
 
 /* ── Open / Close ────────────────────────────────────── */
 function openCartDrawer() {
-    document.getElementById('cart-drawer')?.classList.add('cart-drawer--open');
-    document.getElementById('cart-overlay')?.classList.add('cart-overlay--visible');
+    const drawer  = document.getElementById('cart-drawer');
+    const overlay = document.getElementById('cart-overlay');
+    if (!drawer) return;
+
+    _cartFocusBefore = document.activeElement;
+    drawer.classList.add('cart-drawer--open');
+    drawer.setAttribute('aria-modal', 'true');
+    overlay?.classList.add('cart-overlay--visible');
+    if (overlay) overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     renderCartContents();
+    document.getElementById('cart-close')?.focus();
 }
 
 function closeCartDrawer() {
-    document.getElementById('cart-drawer')?.classList.remove('cart-drawer--open');
-    document.getElementById('cart-overlay')?.classList.remove('cart-overlay--visible');
+    const drawer  = document.getElementById('cart-drawer');
+    const overlay = document.getElementById('cart-overlay');
+    drawer?.classList.remove('cart-drawer--open');
+    drawer?.setAttribute('aria-modal', 'false');
+    overlay?.classList.remove('cart-overlay--visible');
+    if (overlay) overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (_cartFocusBefore && typeof _cartFocusBefore.focus === 'function') {
+        _cartFocusBefore.focus();
+    }
+    _cartFocusBefore = null;
 }
 
 /* ── Render conținut drawer ──────────────────────────── */
@@ -86,11 +114,19 @@ function renderCartContents() {
 
 /* ── Item HTML ───────────────────────────────────────── */
 function _cartCoverImage(item) {
-    if (item.image) return item.image;
+    if (item.image) {
+        if (typeof _safeImgSrc === 'function') {
+            const safe = _safeImgSrc(item.image);
+            return safe || null;
+        }
+        return item.image;
+    }
     // Coș vechi fără image: încearcă din catalogul încărcat
     if (typeof getProductById === 'function') {
         const p = getProductById(item.id);
-        if (p?.images?.length) return p.images[0];
+        if (p?.images?.length) {
+            return typeof _safeImgSrc === 'function' ? (_safeImgSrc(p.images[0]) || null) : p.images[0];
+        }
     }
     return null;
 }
@@ -98,23 +134,26 @@ function _cartCoverImage(item) {
 function _cartItemHTML(item) {
     const lineTotal = (item.price * item.qty).toFixed(2).replace('.', ',');
     const cover = _cartCoverImage(item);
+    const esc = typeof _escHtml === 'function' ? _escHtml : _escCartAttr;
 
     const weightWarn = item.weightNote
         ? `<span class="cart-item-note">± max 100g variație greutate</span>`
         : '';
     const pieceNote = item.unit === 'buc' && item.pieceGrams
-        ? `<span class="cart-item-note">${item.pieceGrams} g / buc</span>`
+        ? `<span class="cart-item-note">${Number(item.pieceGrams)} g / buc</span>`
         : '';
 
-    // Torturi (kg) → pills fixe
+    // Torturi (kg) → pills din min/step/max produs
     let qtyControl = '';
     if (item.unit === 'kg') {
+        const opts = _cartWeightOptions(item);
         qtyControl = `
-        <div class="cart-weight-pills" data-id="${item.id}">
-            ${WEIGHT_OPTIONS.map(w => `
-            <button class="cart-weight-pill ${item.qty === w.kg ? 'cart-weight-pill--active' : ''}"
-                    data-id="${item.id}" data-kg="${w.kg}" type="button">
-                ${w.label}
+        <div class="cart-weight-pills" data-id="${esc(item.id)}" role="group" aria-label="Greutate">
+            ${opts.map(w => `
+            <button class="cart-weight-pill ${Math.abs(item.qty - w.kg) < 0.001 ? 'cart-weight-pill--active' : ''}"
+                    data-id="${esc(item.id)}" data-kg="${w.kg}" type="button"
+                    aria-pressed="${Math.abs(item.qty - w.kg) < 0.001 ? 'true' : 'false'}">
+                ${esc(w.label)}
             </button>`).join('')}
         </div>
         <span class="cart-custom-note">Altă greutate? <a href="#comenzi-custom" class="cart-custom-link">Comandă custom</a></span>`;
@@ -125,33 +164,33 @@ function _cartItemHTML(item) {
         const atMin = item.unit !== 'kg' && item.qty <= minQty;
         qtyControl = `
         <div class="qty-control">
-            <button class="qty-btn qty-minus" data-id="${item.id}" aria-label="Scade cantitatea"
-                    ${atMin ? 'disabled' : ''} title="${atMin ? `Minim ${minQty} ${item.unit}` : ''}">−</button>
-            <span class="qty-value">${qtyLabel}</span>
-            <button class="qty-btn qty-plus" data-id="${item.id}" aria-label="Crește cantitatea">+</button>
+            <button class="qty-btn qty-minus" data-id="${esc(item.id)}" aria-label="Scade cantitatea"
+                    ${atMin ? 'disabled' : ''} title="${atMin ? `Minim ${minQty} ${esc(item.unit)}` : ''}">−</button>
+            <span class="qty-value">${esc(qtyLabel)}</span>
+            <button class="qty-btn qty-plus" data-id="${esc(item.id)}" aria-label="Crește cantitatea">+</button>
         </div>`;
     }
 
     const thumb = cover
         ? `<img src="${_escCartAttr(cover)}" alt="" class="cart-item-photo" loading="lazy" width="48" height="48">`
-        : (item.emoji || '🍰');
+        : esc(item.emoji || '🍰');
 
     return `
-    <div class="cart-item" data-id="${item.id}">
+    <div class="cart-item" data-id="${esc(item.id)}">
         <div class="cart-item-thumb${cover ? ' cart-item-thumb--photo' : ''}"
-             style="${cover ? '' : `background:${item.bg || 'var(--bg)'};`}"
+             style="${cover ? '' : `background:${esc(item.bg || 'var(--bg)')};`}"
              aria-hidden="true">
             ${thumb}
         </div>
         <div class="cart-item-info">
-            <span class="cart-item-name">${item.name}</span>
+            <span class="cart-item-name">${esc(item.name)}</span>
             ${pieceNote}
             ${weightWarn}
             ${qtyControl}
         </div>
         <div class="cart-item-right">
             <span class="cart-item-price">${lineTotal} RON</span>
-            <button class="cart-item-remove" data-id="${item.id}" aria-label="Elimină din coș">
+            <button class="cart-item-remove" data-id="${esc(item.id)}" aria-label="Elimină din coș">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -177,6 +216,24 @@ function _cartItemMinQty(item) {
         if (p?.minQty != null) return Number(p.minQty);
     }
     return 1;
+}
+
+function _cartWeightOptions(item) {
+    let product = item;
+    if (typeof getProductById === 'function') {
+        const live = getProductById(item.id);
+        if (live) {
+            product = {
+                minQty: live.minQty ?? item.minQty,
+                step:   live.step ?? item.step,
+                maxQty: live.maxQty ?? item.maxQty,
+            };
+        }
+    }
+    if (typeof weightOptionsForProduct === 'function') {
+        return weightOptionsForProduct(product);
+    }
+    return typeof WEIGHT_OPTIONS !== 'undefined' ? WEIGHT_OPTIONS : [];
 }
 
 /* ── Binding butoane item ─────────────────────────────── */

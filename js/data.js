@@ -7,6 +7,52 @@
  * getProductById(id)      — sync, caută în cache
  */
 
+/* ── Per-product weight options (modal + coș) ───────── */
+function weightOptionsForProduct(product) {
+    const min  = Number(product.minQty ?? product.min_qty ?? 1.2);
+    const step = Number(product.step ?? 0.6) || 0.6;
+    const max  = Number(product.maxQty ?? product.max_qty ?? 2.4);
+    const opts = [];
+    for (let w = min; w <= max + 0.001; w = Math.round((w + step) * 100) / 100) {
+        const portions = Math.round(w / 0.15);
+        opts.push({
+            kg:    w,
+            label: w.toFixed(1).replace('.', ',') + ' kg',
+            note:  `~${portions} porții`,
+        });
+    }
+    return opts.length ? opts : [{ kg: min, label: min.toFixed(1).replace('.', ',') + ' kg', note: '' }];
+}
+
+/** @deprecated alias — folosește weightOptionsForProduct */
+function _weightOptions(product) {
+    return weightOptionsForProduct(product);
+}
+
+const WEIGHT_OPTIONS = [
+    { kg: 1.2, label: '1,2 kg', note: '~8 porții' },
+    { kg: 1.8, label: '1,8 kg', note: '~12 porții' },
+    { kg: 2.4, label: '2,4 kg', note: '~16 porții' },
+];
+
+/* ── Escape HTML (XSS) — folosit pe storefront ──────── */
+function _escHtml(str) {
+    if (str == null || str === '') return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/** URL pentru <img src> — blochează javascript:/data: */
+function _safeImgSrc(url) {
+    const s = String(url || '').trim();
+    if (!s) return '';
+    if (/^(javascript|data|vbscript):/i.test(s)) return '';
+    return _escHtml(s);
+}
+
 /* ── Mapare row Supabase → obiect JS ───────────────── */
 function _mapRow(row) {
     return {
@@ -34,12 +80,6 @@ function _mapRow(row) {
         pieces:      row.category === 'office-box' ? Number((row.name.match(/\d+/) || [1])[0]) : undefined,
     };
 }
-
-const WEIGHT_OPTIONS = [
-    { kg: 1.2, label: '1,2 kg', note: '~8 porții' },
-    { kg: 1.8, label: '1,8 kg', note: '~12 porții' },
-    { kg: 2.4, label: '2,4 kg', note: '~16 porții' },
-];
 
 /* ── Date locale (fallback când Supabase e unavailable) ── */
 const _LOCAL_PRODUCTS_RAW = [

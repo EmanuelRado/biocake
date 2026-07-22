@@ -26,23 +26,6 @@ const SHARED_TAGS = [
     { label: '🚫 Fără conservanți', style: '' },
 ];
 
-/* ── Per-product weight options generator ────────────── */
-function _weightOptions(product) {
-    const min  = product.minQty || 1.2;
-    const step = product.step   || 0.6;
-    const max  = product.maxQty || 2.4;
-    const opts = [];
-    for (let w = min; w <= max + 0.001; w = Math.round((w + step) * 100) / 100) {
-        const portions = Math.round(w / 0.15);
-        opts.push({
-            kg:    w,
-            label: w.toFixed(1).replace('.', ',') + ' kg',
-            note:  `~${portions} porții`,
-        });
-    }
-    return opts.length ? opts : [{ kg: min, label: min.toFixed(1).replace('.', ',') + ' kg', note: '' }];
-}
-
 /* ── State modal & carousel ──────────────────────────── */
 let _modalProduct   = null;
 let _selectedWeight = 1.2;
@@ -147,7 +130,9 @@ function _skeletonGrid(count) {
 
 /* ── Card HTML ───────────────────────────────────────── */
 function _productCard(p) {
-    const badgeHTML  = p.badge ? `<span class="product-badge">${p.badge}</span>` : '';
+    const name       = _escHtml(p.name);
+    const desc       = _escHtml(p.description);
+    const badgeHTML  = p.badge ? `<span class="product-badge">${_escHtml(p.badge)}</span>` : '';
     const priceLabel = _formatPrice(p);
     const gramsNote  = p.unit === 'buc' && p.pieceGrams
         ? `${p.pieceGrams} g / buc`
@@ -159,32 +144,34 @@ function _productCard(p) {
         : p.unit === 'kg' ? `<span class="product-min-note">per kg</span>` : '';
 
     // Imagine reală sau emoji placeholder
-    const hasImages = p.images && p.images.length > 0;
+    const coverSrc  = p.images?.[0] ? _safeImgSrc(p.images[0]) : '';
+    const hasImages = Boolean(coverSrc);
     const photoHint = hasImages && p.images.length > 1
         ? `<span class="product-photo-count">📷 ${p.images.length}</span>` : '';
+    const bgSafe    = _escHtml(p.bg || '#FEE8F1');
 
     const cardImgContent = hasImages
-        ? `<img src="${p.images[0]}" alt="${p.name}" class="product-card-photo" loading="lazy">`
-        : `<span class="product-emoji" aria-hidden="true">${p.emoji}</span>`;
+        ? `<img src="${coverSrc}" alt="${name}" class="product-card-photo" loading="lazy">`
+        : `<span class="product-emoji" aria-hidden="true">${_escHtml(p.emoji || '🍰')}</span>`;
 
     return `
-    <article class="product-card" data-id="${p.id}" role="button"
-             tabindex="0" aria-label="Vezi detalii ${p.name}">
-        <div class="product-card-img ${hasImages ? 'product-card-img--photo' : ''}" style="${hasImages ? '' : 'background:' + p.bg + ';'}">
+    <article class="product-card" data-id="${_escHtml(p.id)}" role="button"
+             tabindex="0" aria-label="Vezi detalii ${name}">
+        <div class="product-card-img ${hasImages ? 'product-card-img--photo' : ''}" style="${hasImages ? '' : 'background:' + bgSafe + ';'}">
             ${cardImgContent}
             ${badgeHTML}
             ${photoHint}
         </div>
         <div class="product-card-body">
-            <h3 class="product-name">${p.name}</h3>
-            <p class="product-desc">${p.description}</p>
+            <h3 class="product-name">${name}</h3>
+            <p class="product-desc">${desc}</p>
             <div class="product-card-footer">
                 <div class="product-price-wrap">
                     <span class="product-price">${priceLabel}</span>
                     ${minNote}
                 </div>
-                <button class="btn-add-cart" data-id="${p.id}"
-                        aria-label="Adaugă ${p.name} în coș">
+                <button class="btn-add-cart" data-id="${_escHtml(p.id)}"
+                        aria-label="Adaugă ${name} în coș">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
@@ -294,8 +281,10 @@ function _injectModalHTML() {
         if (!e.target.closest('#modal-panel')) closeProductModal();
     });
 
-    // ESC → close
+    // ESC / arrows — doar când modalul e deschis
     document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('product-modal');
+        if (!modal?.classList.contains('modal-open')) return;
         if (e.key === 'Escape') closeProductModal();
         if (e.key === 'ArrowLeft')  _goToSlide(_currentSlide - 1);
         if (e.key === 'ArrowRight') _goToSlide(_currentSlide + 1);
@@ -314,15 +303,20 @@ function _injectModalHTML() {
 /* ── Carousel ────────────────────────────────────────── */
 function _buildCarouselSlides(product) {
     if (product.images && product.images.length > 0) {
-        return product.images.map(src => `
+        const name = _escHtml(product.name);
+        return product.images.map(src => {
+            const safe = _safeImgSrc(src);
+            if (!safe) return '';
+            return `
             <div class="modal-slide">
-                <img src="${src}" alt="${product.name}" class="modal-slide-img" loading="lazy">
-            </div>`);
+                <img src="${safe}" alt="${name}" class="modal-slide-img" loading="lazy">
+            </div>`;
+        }).filter(Boolean);
     }
     // Emoji placeholder (un singur slide)
     return [`
-        <div class="modal-slide" style="background:${product.bg};">
-            <span class="modal-slide-emoji" aria-hidden="true">${product.emoji}</span>
+        <div class="modal-slide" style="background:${_escHtml(product.bg || '#FEE8F1')};">
+            <span class="modal-slide-emoji" aria-hidden="true">${_escHtml(product.emoji || '🍰')}</span>
             <p class="modal-slide-placeholder-hint">Fotografii în curând</p>
         </div>`];
 }
@@ -481,7 +475,7 @@ function _renderModalContent(p) {
         ...(p.badge ? [{ label: p.badge, style: 'pink' }] : []),
     ];
     const tagsHTML = allTags
-        .map(t => `<span class="modal-tag modal-tag-${t.style || ''}">${t.label}</span>`)
+        .map(t => `<span class="modal-tag modal-tag-${_escHtml(t.style || '')}">${_escHtml(t.label)}</span>`)
         .join('');
 
     // Selector greutate (torturi) sau cantitate (prăjituri)
@@ -494,8 +488,8 @@ function _renderModalContent(p) {
                 ${_weightOptions(p).map((w, i) => `
                 <button class="modal-weight-pill ${i === 0 ? 'selected' : ''}"
                         data-kg="${w.kg}" type="button">
-                    ${w.label}
-                    <small>${w.note}</small>
+                    ${_escHtml(w.label)}
+                    <small>${_escHtml(w.note)}</small>
                 </button>`).join('')}
             </div>
         </div>
@@ -508,16 +502,17 @@ function _renderModalContent(p) {
             Greutatea finală poate varia cu <strong>maximum 100g</strong> față de cea selectată,
             datorită naturii artizanale a preparatelor.
         </div>`;
-    } else if (p.unit === 'buc') {
-        const gramsHint = p.pieceGrams
-            ? `<p class="modal-piece-grams">1 buc ≈ <strong>${p.pieceGrams} g</strong></p>`
+    } else if (p.unit === 'buc' || p.unit === 'cutie') {
+        const unitLabel = p.unit === 'cutie' ? 'cutie' : 'buc';
+        const gramsHint = p.unit === 'buc' && p.pieceGrams
+            ? `<p class="modal-piece-grams">1 buc ≈ <strong>${Number(p.pieceGrams)} g</strong></p>`
             : '';
         selectorHTML = `
         <div class="modal-selector-section">
-            <p class="modal-selector-label">Cantitate (min. ${p.minQty} buc):</p>
+            <p class="modal-selector-label">Cantitate (min. ${Number(p.minQty)} ${unitLabel}):</p>
             <div class="modal-qty-control">
                 <button class="modal-qty-btn" id="modal-qty-minus" type="button" aria-label="Scade">−</button>
-                <span class="modal-qty-value" id="modal-qty-value">${p.minQty} buc</span>
+                <span class="modal-qty-value" id="modal-qty-value">${Number(p.minQty)} ${unitLabel}</span>
                 <button class="modal-qty-btn" id="modal-qty-plus" type="button" aria-label="Crește">+</button>
             </div>
             ${gramsHint}
@@ -527,7 +522,7 @@ function _renderModalContent(p) {
     // Ingredients
     let ingredientsHTML = '';
     if (p.ingredients) {
-        const text = p.ingredients.replace(/\*/g, '<sup style="color:var(--pink);font-size:0.65em;">●</sup>');
+        const text = _escHtml(p.ingredients).replace(/\*/g, '<sup style="color:var(--pink);font-size:0.65em;">●</sup>');
         ingredientsHTML = `
         <div class="modal-section">
             <p class="modal-section-title">🧾 Ingrediente</p>
@@ -535,7 +530,7 @@ function _renderModalContent(p) {
             ${p.allergens?.length ? `
             <div class="modal-allergens">
                 <span class="modal-allergen-label">Alergeni:</span>
-                ${p.allergens.map(a => `<span class="modal-allergen-tag">${a}</span>`).join('')}
+                ${p.allergens.map(a => `<span class="modal-allergen-tag">${_escHtml(a)}</span>`).join('')}
             </div>` : ''}
         </div>`;
     }
@@ -546,17 +541,17 @@ function _renderModalContent(p) {
         const n = p.nutritional;
         nutritionalHTML = `
         <div class="modal-section">
-            <p class="modal-section-title">📊 Declarație Nutrițională (per ${n.per})</p>
+            <p class="modal-section-title">📊 Declarație Nutrițională (per ${_escHtml(n.per)})</p>
             <table class="modal-nutritional-table">
                 <tbody>
-                    <tr><td>Valoare energetică</td><td><strong>${n.energy_kcal} kcal</strong> / ${n.energy_kj} kJ</td></tr>
-                    <tr><td>Grăsimi</td><td>${n.fat}g</td></tr>
-                    <tr class="modal-nut-sub"><td>— din care acizi grași saturați</td><td>${n.saturated_fat}g</td></tr>
-                    <tr><td>Glucide</td><td>${n.carbs}g</td></tr>
-                    <tr class="modal-nut-sub"><td>— din care zaharuri</td><td>${n.sugars}g</td></tr>
-                    <tr><td>Fibre</td><td>${n.fiber}g</td></tr>
-                    <tr><td>Proteine</td><td>${n.protein}g</td></tr>
-                    <tr><td>Sare</td><td>${n.salt}g</td></tr>
+                    <tr><td>Valoare energetică</td><td><strong>${_escHtml(n.energy_kcal)} kcal</strong> / ${_escHtml(n.energy_kj)} kJ</td></tr>
+                    <tr><td>Grăsimi</td><td>${_escHtml(n.fat)}g</td></tr>
+                    <tr class="modal-nut-sub"><td>— din care acizi grași saturați</td><td>${_escHtml(n.saturated_fat)}g</td></tr>
+                    <tr><td>Glucide</td><td>${_escHtml(n.carbs)}g</td></tr>
+                    <tr class="modal-nut-sub"><td>— din care zaharuri</td><td>${_escHtml(n.sugars)}g</td></tr>
+                    <tr><td>Fibre</td><td>${_escHtml(n.fiber)}g</td></tr>
+                    <tr><td>Proteine</td><td>${_escHtml(n.protein)}g</td></tr>
+                    <tr><td>Sare</td><td>${_escHtml(n.salt)}g</td></tr>
                 </tbody>
             </table>
             <p class="modal-nutritional-note">● Ingrediente de origine animală · Valori orientative, pot varia ușor în funcție de sezon.</p>
@@ -565,10 +560,10 @@ function _renderModalContent(p) {
 
     document.getElementById('modal-body').innerHTML = `
     <div class="modal-header-row">
-        <h2 class="modal-title">${p.name}</h2>
+        <h2 class="modal-title">${_escHtml(p.name)}</h2>
         <span class="modal-price">${_formatPrice(p)}</span>
     </div>
-    <p class="modal-desc">${p.description}</p>
+    <p class="modal-desc">${_escHtml(p.description)}</p>
     <div class="modal-tags">${tagsHTML}</div>
     ${selectorHTML}
     ${ingredientsHTML}
@@ -600,20 +595,28 @@ function _bindModalSelectors(p) {
     const minusBtn = document.getElementById('modal-qty-minus');
     const plusBtn  = document.getElementById('modal-qty-plus');
     const qtyEl    = document.getElementById('modal-qty-value');
+    const unitLabel = p.unit === 'cutie' ? 'cutie' : 'buc';
     if (minusBtn && plusBtn && qtyEl) {
+        const step = Number(p.step) || 1;
         minusBtn.addEventListener('click', () => {
-            if (_selectedQty > p.minQty) { _selectedQty -= p.step; qtyEl.textContent = `${_selectedQty} buc`; }
+            if (_selectedQty > p.minQty) {
+                _selectedQty = Math.round((_selectedQty - step) * 100) / 100;
+                qtyEl.textContent = `${_selectedQty} ${unitLabel}`;
+            }
         });
         plusBtn.addEventListener('click', () => {
-            _selectedQty += p.step; qtyEl.textContent = `${_selectedQty} buc`;
+            _selectedQty = Math.round((_selectedQty + step) * 100) / 100;
+            qtyEl.textContent = `${_selectedQty} ${unitLabel}`;
         });
     }
 
     document.getElementById('modal-add-btn')?.addEventListener('click', () => {
         if (!_modalProduct) return;
-        const qty = _modalProduct.unit === 'kg'  ? _selectedWeight
-                  : _modalProduct.unit === 'buc' ? _selectedQty
-                  : 1;
+        const qty = _modalProduct.unit === 'kg'
+            ? _selectedWeight
+            : (_modalProduct.unit === 'buc' || _modalProduct.unit === 'cutie')
+                ? _selectedQty
+                : 1;
         addToCart(_modalProduct, qty);
         const btn = document.getElementById('modal-add-btn');
         btn.classList.add('modal-add-btn--added');

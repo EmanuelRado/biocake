@@ -1,56 +1,76 @@
 # BioCake — Magazin Online
 
-Magazin online premium pentru prăjituri și torturi artizanale, cu livrare în București și Ilfov.
+Magazin online premium pentru prăjituri și torturi artizanale **fără zahăr rafinat**, cu livrare în București și Ilfov.
+
+**Live:** https://biocake.ro  
+**Repo:** https://github.com/EmanuelRado/biocake (`main` → Netlify)
 
 ## Ce conține proiectul
 
 | Pagină | Fișier | Descriere |
 |--------|--------|-----------|
-| **Site clienți** | `index.html` | Catalog produse, coș, checkout |
-| **Panou admin (PWA)** | `admin.html` | Gestiune comenzi și produse + notificări push |
+| **Site clienți** | `index.html` | Catalog, coș, checkout, secțiune Despre |
+| **Panou admin (PWA)** | `admin.html` | Comenzi realtime, produse CRUD, push |
 
 ## Cum se deschide local
 
 ```bash
-# Din folderul proiectului:
 python -m http.server 8080
 ```
 
-Apoi deschide în browser:
 - Site: http://localhost:8080/index.html
 - Admin: http://localhost:8080/admin.html
 
+## Flux comandă (important)
+
+1. Client adaugă în coș (prețuri UI din catalog).
+2. Checkout validează pe client (48h, Lun–Sâm, sloturi).
+3. Submit apelează RPC Supabase **`place_order`** — prețuri din DB, insert atomic.
+4. Succes + WhatsApp (număr din `js/config.js`).
+
+Nu insera direct în `orders` / `order_items` din client.
+
+## Contact (config)
+
+Editează **`js/config.js`**:
+
+```js
+phoneDisplay, phoneTel, whatsapp, email
+```
+
+Footer + checkout citesc de aici.
+
+## Categorii produse
+
+`torturi-clasice` · `prajituri` · `office-box` · `de-post` (UI: „De Post”)
+
 ## Panou Administrator (PWA)
 
-- Login cu contul Supabase Auth creat pentru admin
-- **Instalare**: pe Android — banner „Instalează"; pe iOS — Share → Adaugă pe ecranul principal
-- **Notificări push**: activează clopoțelul din header (funcționează în PWA instalată; pe iOS 16.4+)
-- **Comenzi**: listă realtime (cele mai noi primele), schimbare status (`pending → confirmed → paid → delivered`)
-- **Produse**: activare/dezactivare, editare completă, adăugare/ștergere
+- Login Supabase Auth (`admin@biocake.ro`)
+- Comenzi: realtime, status, delete, WhatsApp
+- Produse: CRUD, imagini Storage, `piece_grams` pentru buc, greutăți kg min/step/max
+- Push: clopoțel → VAPID; webhook pe INSERT orders
 
-## Deploy
+## SQL de referință
 
-- **GitHub**: repo privat `EmanuelRado/biocake`, branch `main`
-- **Netlify**: auto-deploy la push (`netlify.toml`)
-- **Domeniu live**: https://biocake.ro
-
-## Setup notificări push (Supabase)
-
-1. Rulează `supabase-push.sql` în SQL Editor
-2. Deploy Edge Function `notify-new-order` + setează secrets VAPID
-3. Activează Database Webhooks (Integrations → Overview)
-4. Creează webhook: `public.orders` INSERT → `notify-new-order`
+| Fișier | Rol |
+|--------|-----|
+| `supabase-p0-security.sql` | `is_admin` + RLS |
+| `supabase-place-order.sql` | RPC comandă |
+| `supabase-piece-grams.sql` | Gramaj bucată |
+| `supabase-delivery-time.sql` | Oră livrare |
+| `supabase-push.sql` / `supabase-storage.sql` | Push / imagini |
 
 ## Stack
 
-- HTML + CSS + Vanilla JS (fără framework)
-- Supabase (PostgreSQL, Auth, Realtime, Edge Functions)
-- PWA (Service Worker + Web Push)
-- Netlify (static hosting)
+HTML + CSS + Vanilla JS · Supabase · PWA · Netlify
 
-## Documentație proiect
+## Documentație
 
-- `CURSOR_HANDOVER.md` — context tehnic complet
-- `Ghid de Implementare.md` — roadmap etape
-- `Arhitectura Sistemului.md` — schema DB și fluxuri
-- `BioCake.md` — overview proiect și checklist
+- `CURSOR_HANDOVER.md` — context tehnic (sursă de adevăr pentru agenți)
+- `Arhitectura Sistemului.md` — schemă + fluxuri
+- `BioCake.md` — overview + checklist
+- `Ghid de Implementare.md` — roadmap
+- `Plan de Afaceri.md` — business
+
+> La modificări tehnice, actualizează docs în același timp (regulă `.cursor/rules/biocake-docs.mdc`).

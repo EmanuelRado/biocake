@@ -59,9 +59,15 @@ function addToCart(product, qty) {
 
     if (existing) {
         existing.qty = Math.round((existing.qty + qty) * 100) / 100;
-        // Actualizează coperta dacă lipsea (coș vechi) sau s-a schimbat
+        // Sync câmpuri live (preț, greutăți, copertă)
         if (cover) existing.image = cover;
+        existing.price = product.price;
+        existing.name  = product.name;
+        existing.step  = product.step;
         if (product.minQty != null) existing.minQty = product.minQty;
+        if (product.maxQty != null) existing.maxQty = product.maxQty;
+        if (product.pieceGrams != null) existing.pieceGrams = product.pieceGrams;
+        existing.weightNote = product.weightNote || false;
     } else {
         items.push({
             id:         product.id,
@@ -69,8 +75,9 @@ function addToCart(product, qty) {
             price:      product.price,
             unit:       product.unit,
             qty:        qty,
-            step:       product.step,
+            step:       product.step ?? (product.unit === 'kg' ? 0.6 : 1),
             minQty:     product.minQty || 1,
+            maxQty:     product.maxQty || null,
             weightNote: product.weightNote || false,
             pieceGrams: product.pieceGrams || null,
             image:      cover,
@@ -141,7 +148,10 @@ function setItemQty(id, qty) {
     const items = loadCart();
     const item = items.find(i => i.id === id);
     if (!item || qty <= 0) return;
-    item.qty = Math.round(qty * 100) / 100;
+    const minQty = _itemMinQty(item);
+    const next = Math.round(qty * 100) / 100;
+    if (next < minQty) return;
+    item.qty = next;
     saveCart(items);
     _notifyCartChange();
 }

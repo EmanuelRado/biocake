@@ -2,9 +2,8 @@
    BioCake — Premium Design System
    Fonts: Cormorant Garamond (editorial serif) + DM Sans (clean body)
    Palette: Vanilla cream / Dusty rose / Chocolate / Champagne gold
+   Fonts loaded from index.html (non-blocking) — nu folosi @import aici
    ========================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap');
 
 /* ==========================================================================
    Design Tokens
@@ -13,8 +12,11 @@
     /* Brand Colors */
     --pink:           #FC6D9F;
     --pink-hover:     #f5508a;
+    --pink-dark:      #e0457a;
+    --pink-cta:       var(--pink);
+    --pink-cta-hover: var(--pink-hover);
     --pink-soft:      #FEE8F1;
-    --pink-glow:      rgba(252, 109, 159, 0.18);
+    --pink-glow:      rgba(252, 109, 159, 0.22);
 
     --green:          #37B536;
     --green-soft:     #E8F7E8;
@@ -25,6 +27,7 @@
 
     --vanilla:        #FAF6F1;
     --vanilla-dark:   #F2EBE1;
+    --bg-off:         var(--vanilla-dark);
 
     --gold:           #C9A84C;
     --gold-soft:      #FBF3DE;
@@ -114,6 +117,16 @@ button {
     border: none;
     background: none;
     cursor: pointer;
+}
+
+:focus-visible {
+    outline: 3px solid var(--pink-cta);
+    outline-offset: 3px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+    outline: none;
 }
 
 img {
@@ -254,7 +267,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--pink);
+    background: var(--pink-cta);
     color: var(--white);
     padding: 11px 22px;
     border-radius: var(--radius-full);
@@ -262,12 +275,12 @@ em { font-family: var(--font-serif); font-style: italic; }
     font-weight: 600;
     letter-spacing: 0.01em;
     box-shadow: 0 4px 16px var(--pink-glow);
-    transition: all var(--t-base) var(--ease);
+    transition: background var(--t-base) var(--ease), transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
     white-space: nowrap;
 }
 
 .btn-cta:hover {
-    background: var(--pink-hover);
+    background: var(--pink-cta-hover);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(252, 109, 159, 0.30);
 }
@@ -306,11 +319,21 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: none;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     gap: 5px;
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     cursor: pointer;
-    padding: 2px;
+    padding: 10px;
+    margin: 0;
+    background: transparent;
+    border: none;
+    font: inherit;
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .hamburger span {
@@ -319,7 +342,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     height: 1.5px;
     background: var(--choco);
     border-radius: 2px;
-    transition: all var(--t-base) var(--ease);
+    transition: transform var(--t-base) var(--ease), opacity var(--t-base) var(--ease);
     transform-origin: center;
 }
 
@@ -955,6 +978,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     box-shadow: var(--shadow-xl);
     transform: translateX(100%);
     transition: transform var(--t-slow) var(--ease);
+    overscroll-behavior: contain;
 }
 
 .cart-drawer--open {
@@ -1007,6 +1031,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overscroll-behavior: contain;
 }
 
 .cart-items::-webkit-scrollbar { width: 4px; }
@@ -1287,7 +1312,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: var(--pink);
+    background: var(--pink-cta);
     color: var(--white);
     padding: 14px;
     border-radius: var(--radius-full);
@@ -1298,13 +1323,13 @@ em { font-family: var(--font-serif); font-style: italic; }
     cursor: pointer;
     width: 100%;
     box-shadow: 0 4px 16px var(--pink-glow);
-    transition: all var(--t-base) var(--ease);
+    transition: background var(--t-base) var(--ease), transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
 }
 
 .cart-checkout-btn:not(:disabled):hover {
-    background: var(--pink-hover);
+    background: var(--pink-cta-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(252,109,159,0.30);
+    box-shadow: 0 8px 24px rgba(252, 109, 159, 0.30);
 }
 
 .cart-checkout-btn:disabled { cursor: not-allowed; }
@@ -1741,7 +1766,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     gap: 8px;
     width: 100%;
     padding: 14px;
-    background: var(--pink);
+    background: var(--pink-cta);
     color: var(--white);
     border: none;
     border-radius: var(--radius-full);
@@ -1750,13 +1775,13 @@ em { font-family: var(--font-serif); font-style: italic; }
     font-family: var(--font-body);
     cursor: pointer;
     box-shadow: 0 4px 16px var(--pink-glow);
-    transition: all var(--t-base) var(--ease);
+    transition: background var(--t-base) var(--ease), transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
 }
 
 .modal-add-btn:hover {
-    background: var(--pink-hover);
+    background: var(--pink-cta-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(252,109,159,0.30);
+    box-shadow: 0 8px 24px rgba(252, 109, 159, 0.30);
 }
 
 .modal-add-btn--added {
@@ -1823,7 +1848,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     font-weight: 600;
     background: rgba(252,109,159,0.08);
     border: 1px solid rgba(252,109,159,0.22);
-    color: #C0335C;
+    color: var(--pink);
 }
 
 /* Nutritional table */
@@ -2306,6 +2331,85 @@ em { font-family: var(--font-serif); font-style: italic; }
 }
 
 /* ==========================================================================
+   Despre — filozofie indulcitori
+   ========================================================================== */
+.about-philosophy {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    margin-top: 8px;
+    padding: 36px 40px;
+    background: linear-gradient(135deg, var(--pink-soft) 0%, var(--gold-soft) 100%);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(252, 109, 159, 0.12);
+}
+
+.about-philosophy-eyebrow {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 10px;
+}
+
+.about-philosophy-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.5vw, 1.9rem);
+    font-weight: 400;
+    color: var(--choco);
+    line-height: 1.25;
+    margin-bottom: 14px;
+}
+
+.about-philosophy-title em {
+    color: var(--pink);
+}
+
+.about-philosophy-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-mid);
+    max-width: 36em;
+}
+
+.sweetener-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+}
+
+.sweetener-list li {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--white);
+    border: 1px solid rgba(61, 32, 20, 0.08);
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--choco);
+    box-shadow: var(--shadow-xs);
+}
+
+.sweetener-list li:last-child {
+    background: transparent;
+    border-style: dashed;
+    color: var(--text-muted);
+    box-shadow: none;
+}
+
+.hero-description strong {
+    color: var(--choco);
+    font-weight: 600;
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 .footer {
@@ -2500,6 +2604,11 @@ em { font-family: var(--font-serif); font-style: italic; }
     .ob-steps               { flex-direction: column; gap: 12px; }
     .ob-step                { flex: none; width: 100%; max-width: 100%; }
     .ob-step-arrow          { display: none; }
+    .about-philosophy {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding: 28px 24px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -2908,7 +3017,7 @@ select.co-input-time {
 .co-submit-btn {
     width: 100%;
     padding: 15px;
-    background: var(--pink);
+    background: var(--pink-cta);
     color: var(--white);
     border: none;
     border-radius: var(--radius-full);
@@ -2920,12 +3029,12 @@ select.co-input-time {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all var(--t-fast) var(--ease);
+    transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
     margin-bottom: 12px;
 }
 
 .co-submit-btn:hover:not(:disabled) {
-    background: var(--pink-dark);
+    background: var(--pink-cta-hover);
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(252, 109, 159, 0.4);
 }
