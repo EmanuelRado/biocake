@@ -16,7 +16,7 @@ Acest document este creat pentru a fi importat într-o nouă sesiune de lucru î
 *   **Politica de Livrare:**
     *   **București:** Taxă **20 RON** (Gratuită >= **250 RON**).
     *   **Ilfov:** Taxă **40 RON** (Gratuită >= **600 RON**).
-*   **Regula de Plată:** Avans **50%**. Netopia încă neintegrat — după submit: ecran succes + buton **WhatsApp** (număr din `js/config.js`). Link plată trimis manual de admin.
+*   **Regula de Plată:** Clientul alege la checkout **avans 50%** sau **integral 100%**, apoi redirect **Netopia** imediat după `place_order`. IPN → `status=paid`. Detalii: [[NETOPIA]].
 *   **Mesaj brand (client):** **Fără zahăr rafinat.** Indulcitori după rețetă: zahăr brut, zahăr de mesteacăn (xilitol), zahăr de cocos, sirop de agave, sirop de curmale, miere etc. Accent pe site (hero, #despre, SEO).
 *   **Regula Greutate Torturi:** `min_qty` / `step` / `max_qty` → opțiuni generate dinamic (`weightOptionsForProduct` în `data.js`). Aceleași opțiuni în modal **și** în coș (pills).
 *   **Gramaj pe bucată:** `piece_grams` (integer, opțional) pentru `unit = buc` — afișat pe card / modal / coș.
@@ -38,6 +38,7 @@ Acest document este creat pentru a fi importat într-o nouă sesiune de lucru î
 
 ### Coloane cheie `orders`
 *   `delivery_time` time (nullable) — slot orar livrare
+*   `pay_mode` (`advance`|`full`), `payment_status`, `amount_paid`, `netopia_order_id`, `netopia_ntp_id`, `paid_at` — vezi `supabase-netopia.sql`
 
 ### RPC `place_order` (canonic: `supabase-place-order.sql`) — ✅ aplicat
 *   Insert **atomic** orders + order_items
@@ -46,6 +47,11 @@ Acest document este creat pentru a fi importat într-o nouă sesiune de lucru î
 *   Taxă livrare recalculată server-side
 *   **INSERT anon pe tabele eliminat** — doar prin RPC (SECURITY DEFINER)
 *   Index `order_items_order_id_idx`
+
+### Netopia (`NETOPIA.md`, `supabase-netopia.sql`, EF `netopia-start` / `netopia-ipn`) — 🟡 cod gata, deploy + secrets manual
+*   După `place_order` → `startNetopiaPayment(orderId, payMode)` → redirect hosted page
+*   Amount din DB (`advance_due` sau `total`)
+*   IPN verifică JWT `Verification-token` → `payment_status=paid` + `status=paid`
 
 ### RLS / Securitate P0 (`supabase-p0-security.sql`) — ✅ aplicat
 *   `is_admin()` = email JWT `admin@biocake.ro`
@@ -81,8 +87,8 @@ SPA static: HTML + CSS + Vanilla JS. Repo: `https://github.com/EmanuelRado/bioca
 | `js/catalog.js` | Catalog, filtre, modal; escape HTML; qty pentru `buc` **și** `cutie` |
 | `js/cart.js` | Coș localStorage; `minQty`/`maxQty`/`image`; sync preț la re-add |
 | `js/cart-ui.js` | Drawer: copertă produs, pills din produs, Escape + focus restore |
-| `js/orders.js` | `submitOrder` → `rpc('place_order')` |
-| `js/checkout.js` | Validare client + succes WhatsApp (din config) |
+| `js/orders.js` | `submitOrder` → `place_order`; `startNetopiaPayment` |
+| `js/checkout.js` | Selector 50%/100%, redirect Netopia, return `?paid=` |
 | `js/app.js` | Init + aplică telefon din config pe footer |
 
 ### Admin PWA
@@ -112,15 +118,16 @@ SPA static: HTML + CSS + Vanilla JS. Repo: `https://github.com/EmanuelRado/bioca
 ### ✅ Etape 1–5b + P0 + domeniu
 Vezi istoric mai jos / commits pe `main`.
 
-### ✅ Audit pre-lansare + Ziua 1–3 (2026-07-19 … 2026-07-22)
+### ✅ Audit pre-lansare + Ziua 1–3 + Netopia cod (2026-07-19 … 2026-07-22)
 **Ziua 1:** escape XSS, `#despre`, tokeni CSS, hamburger `<button>`, `js/config.js`  
 **Ziua 2:** `place_order` RPC, pills greutate din produs, selector cutie, focus-visible + Escape drawer (CTA = `#FC6D9F`)  
 **Ziua 3 (parțial):** mesaj **fără zahăr rafinat** (hero + Despre + meta), OG/canonical/JSON-LD, fonts non-blocking, Cache-Control Netlify  
+**Netopia:** cod Edge Functions + checkout 50%/100% — **deploy secrets + SQL + functions** (vezi [[NETOPIA]])
 
 ### 🟡 Rămâne (backlog)
+*   Deploy Netopia (SQL + secrets + `supabase functions deploy`) + test sandbox
 *   Telefon / WhatsApp **real** în `js/config.js`
 *   Pipeline imagini (resize/WebP la upload)
-*   Netopia Payments
 *   Rate-limit / captcha pe comenzi (RPC încă public EXEC)
 *   Focus trap complet pe drawer; paginare comenzi admin
 
@@ -130,7 +137,7 @@ Vezi istoric mai jos / commits pe `main`.
 
 *   **Etapa 5:** Admin CRUD + realtime  
 *   **Etapa 5b:** PWA + push  
-*   **Etapa 6 (parțial):** GitHub + Netlify + `biocake.ro` + P0 security + delivery slots + delete orders + De Post + piece_grams + place_order + brand/SEO Ziua 3  
+*   **Etapa 6 (parțial):** GitHub + Netlify + `biocake.ro` + P0 + De Post + piece_grams + place_order + brand/SEO + Netopia (cod)  
 
 ---
 

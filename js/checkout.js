@@ -199,9 +199,25 @@ function _summaryHTML(items, subtotal, delivery, total, advance) {
         </div>
 
         <div class="co-advance-box">
-            <div class="co-advance-label">Avans de plată (50%)</div>
-            <div class="co-advance-amount">${advance.toFixed(2).replace('.', ',')} RON</div>
-            <div class="co-advance-note">Vei primi link-ul de plată după confirmarea comenzii</div>
+            <div class="co-advance-label">Alege suma de plată online</div>
+            <div class="co-pay-modes" role="radiogroup" aria-label="Mod de plată">
+                <label class="co-pay-mode co-pay-mode--active">
+                    <input type="radio" name="payMode" value="advance" checked>
+                    <span class="co-pay-mode-title">Avans 50%</span>
+                    <span class="co-pay-mode-amount" data-pay="advance">${advance.toFixed(2).replace('.', ',')} RON</span>
+                    <span class="co-pay-mode-note">Restul la livrare</span>
+                </label>
+                <label class="co-pay-mode">
+                    <input type="radio" name="payMode" value="full">
+                    <span class="co-pay-mode-title">Integral 100%</span>
+                    <span class="co-pay-mode-amount" data-pay="full">${total.toFixed(2).replace('.', ',')} RON</span>
+                    <span class="co-pay-mode-note">Plătești tot acum</span>
+                </label>
+            </div>
+            <p class="co-advance-note">
+                Produsele sunt artizanale: greutatea finală poate varia cu &lt;100&nbsp;g
+                (regularizare la livrare dacă e cazul).
+            </p>
         </div>
 
         <button id="checkout-submit" class="co-submit-btn" type="button">
@@ -210,7 +226,7 @@ function _summaryHTML(items, subtotal, delivery, total, advance) {
                 <path stroke-linecap="round" stroke-linejoin="round"
                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            Plasează Comanda
+            Plasează și plătește
         </button>
 
         <p class="co-disclaimer">
@@ -218,7 +234,7 @@ function _summaryHTML(items, subtotal, delivery, total, advance) {
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            Date securizate · Fără card acum · Plată avans după confirmare
+            Plată securizată Netopia · Card cu 3D Secure
         </p>
     </div>`;
 }
@@ -236,8 +252,15 @@ function _bindCheckoutEvents(currentZone) {
             const delivery = getDeliveryFee(newZone);
             const total    = subtotal + delivery;
             const advance  = Math.round(total * 0.5 * 100) / 100;
+            const prevPay  = document.querySelector('input[name=payMode]:checked')?.value || 'advance';
             document.getElementById('co-summary-col').innerHTML =
                 _summaryHTML(getCart(), subtotal, delivery, total, advance);
+            const payRadio = document.querySelector(`input[name=payMode][value="${prevPay}"]`);
+            if (payRadio) {
+                payRadio.checked = true;
+                _syncPayModeUI();
+            }
+            _bindPayModeEvents();
             _bindSubmitBtn();
         });
     });
@@ -247,7 +270,22 @@ function _bindCheckoutEvents(currentZone) {
         _refreshTimeOptions(dateVal, true);
     });
 
+    _bindPayModeEvents();
     _bindSubmitBtn();
+}
+
+function _bindPayModeEvents() {
+    document.querySelectorAll('input[name=payMode]').forEach(radio => {
+        radio.addEventListener('change', _syncPayModeUI);
+    });
+    _syncPayModeUI();
+}
+
+function _syncPayModeUI() {
+    document.querySelectorAll('.co-pay-mode').forEach(label => {
+        const input = label.querySelector('input[name=payMode]');
+        label.classList.toggle('co-pay-mode--active', !!(input && input.checked));
+    });
 }
 
 function _bindSubmitBtn() {
@@ -258,6 +296,7 @@ function _bindSubmitBtn() {
 /* ── Form data & validation ──────────────────────────── */
 function _getFormData() {
     const fd = new FormData(document.getElementById('checkout-form'));
+    const payMode = document.querySelector('input[name=payMode]:checked')?.value || 'advance';
     return {
         name:    (fd.get('name')    || '').trim(),
         phone:   (fd.get('phone')   || '').replace(/[\s\-\(\)]/g, ''),
@@ -267,6 +306,7 @@ function _getFormData() {
         time:    fd.get('time'),
         address: (fd.get('address') || '').trim(),
         notes:   (fd.get('notes')   || '').trim() || null,
+        payMode: payMode === 'full' ? 'full' : 'advance',
     };
 }
 
@@ -332,8 +372,9 @@ async function _handleSubmit(e) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span class="co-spinner"></span> Se procesează...`;
 
+    let result = null;
     try {
-        const result = await submitOrder({
+        result = await submitOrder({
             cart:            getCart(),
             customerName:    fd.name,
             customerPhone:   fd.phone,
@@ -345,13 +386,37 @@ async function _handleSubmit(e) {
             notes:           fd.notes,
         });
 
-        _showSuccess(result, fd);
+        submitBtn.innerHTML = `<span class="co-spinner"></span> Redirect către plată...`;
+
+        const pay = await startNetopiaPayment(result.order.id, fd.payMode);
+        try {
+            sessionStorage.setItem('biocake_last_order', JSON.stringify({
+                id: result.order.id,
+                total: result.total,
+                advanceDue: result.advanceDue,
+                payMode: fd.payMode,
+                date: fd.date,
+                time: fd.time,
+                name: fd.name,
+            }));
+        } catch (_) { /* ignore */ }
         clearCart();
+        updateCartBadge(0);
+        window.location.href = pay.paymentUrl;
 
     } catch (err) {
-        console.error('[BioCake] Order submit error:', err);
+        console.error('[BioCake] Order/payment error:', err);
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `Plasează Comanda`;
+        submitBtn.innerHTML = `Plasează și plătește`;
+
+        // Comanda există dar plata a eșuat → ecran cu retry
+        if (result && result.order && result.order.id) {
+            clearCart();
+            updateCartBadge(0);
+            _showPaymentPending(result, fd, err);
+            return;
+        }
+
         errorBox.style.display = 'block';
         const raw = (err && (err.message || err.details || err.hint)) || '';
         const friendly = _friendlyOrderError(raw);
@@ -390,11 +455,15 @@ function _friendlyOrderError(raw) {
     return 'A apărut o eroare tehnică. Te rugăm să ne contactezi direct pe WhatsApp.';
 }
 
-/* ── Success screen ──────────────────────────────────── */
-function _showSuccess({ order, total, advanceDue }, fd) {
+/* ── Success / return from Netopia ───────────────────── */
+function _showSuccess({ order, total, advanceDue, payMode, paidConfirmed }, fd) {
     const shortId = order.id.split('-')[0].toUpperCase();
-    const waMsg   = _buildWhatsAppMsg(shortId, total, advanceDue, fd.date, fd.time, fd.name);
-    const waUrl   = `https://wa.me/${CHECKOUT_WHATSAPP}?text=${encodeURIComponent(waMsg)}`;
+    const mode = payMode || fd.payMode || 'advance';
+    const payAmount = mode === 'full' ? total : advanceDue;
+    const payLabel = mode === 'full' ? 'Plată integrală' : 'Avans plătit (50%)';
+
+    const waMsg = _buildWhatsAppMsg(shortId, total, payAmount, mode, fd.date, fd.time, fd.name, paidConfirmed);
+    const waUrl = `https://wa.me/${CHECKOUT_WHATSAPP}?text=${encodeURIComponent(waMsg)}`;
 
     document.getElementById('co-view-form').style.display = 'none';
 
@@ -409,7 +478,7 @@ function _showSuccess({ order, total, advanceDue }, fd) {
                       stroke-linejoin="round" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
             </svg>
         </div>
-        <h2 class="co-success-title">Comanda a fost plasată!</h2>
+        <h2 class="co-success-title">${paidConfirmed ? 'Plata a fost înregistrată!' : 'Comanda a fost plasată!'}</h2>
         <p class="co-success-id">Număr comandă: <strong>#${shortId}</strong></p>
 
         <div class="co-success-totals">
@@ -418,15 +487,16 @@ function _showSuccess({ order, total, advanceDue }, fd) {
                 <strong>${total.toFixed(2).replace('.', ',')} RON</strong>
             </div>
             <div class="co-success-total-row co-success-advance">
-                <span>Avans de plătit (50%)</span>
-                <strong>${advanceDue.toFixed(2).replace('.', ',')} RON</strong>
+                <span>${payLabel}</span>
+                <strong>${payAmount.toFixed(2).replace('.', ',')} RON</strong>
             </div>
         </div>
 
         <p class="co-success-note">
             Livrare programată: <strong>${_formatDateRo(fd.date)} · ${fd.time}</strong><br>
-            Te vom contacta în scurt timp pe WhatsApp sau telefon pentru confirmarea comenzii
-            și trimiterea link-ului de plată pentru avans.
+            ${paidConfirmed
+                ? 'Mulțumim! Confirmăm comanda și te contactăm dacă e nevoie de detalii.'
+                : 'Dacă ai finalizat plata pe Netopia, confirmarea poate dura câteva momente.'}
         </p>
 
         <div class="co-success-actions">
@@ -444,6 +514,48 @@ function _showSuccess({ order, total, advanceDue }, fd) {
 
     requestAnimationFrame(() => {
         setTimeout(() => document.getElementById('co-check')?.classList.add('co-check--animate'), 80);
+    });
+}
+
+/** Comandă creată, dar redirect Netopia a eșuat — retry plată */
+function _showPaymentPending(result, fd, err) {
+    const shortId = result.order.id.split('-')[0].toUpperCase();
+    const mode = fd.payMode || 'advance';
+    const payAmount = mode === 'full' ? result.total : result.advanceDue;
+    const esc = typeof _escHtml === 'function' ? _escHtml : (s => String(s));
+    const errMsg = esc(_friendlyOrderError(err?.message || String(err)));
+
+    document.getElementById('co-view-form').style.display = 'none';
+    const el = document.getElementById('co-view-success');
+    el.style.display = 'flex';
+    el.innerHTML = `
+    <div class="co-success">
+        <h2 class="co-success-title">Comanda există — plata nu a pornit</h2>
+        <p class="co-success-id">Număr comandă: <strong>#${shortId}</strong></p>
+        <p class="co-success-note">
+            ${errMsg}<br>
+            Poți reîncerca plata acum sau ne contactezi pe WhatsApp.
+        </p>
+        <div class="co-success-actions">
+            <button type="button" class="co-submit-btn" id="co-retry-pay">
+                Reîncearcă plata (${payAmount.toFixed(2).replace('.', ',')} RON)
+            </button>
+            <button class="co-btn-back" onclick="closeCheckout()">Închide</button>
+        </div>
+    </div>`;
+
+    document.getElementById('co-retry-pay')?.addEventListener('click', async () => {
+        const btn = document.getElementById('co-retry-pay');
+        btn.disabled = true;
+        btn.textContent = 'Se conectează la Netopia...';
+        try {
+            const pay = await startNetopiaPayment(result.order.id, mode);
+            window.location.href = pay.paymentUrl;
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = `Reîncearcă plata (${payAmount.toFixed(2).replace('.', ',')} RON)`;
+            alert(_friendlyOrderError(e?.message || String(e)));
+        }
     });
 }
 
@@ -568,7 +680,9 @@ function _toTimeInput(d) {
 }
 
 function _formatDateRo(dateStr) {
+    if (!dateStr || dateStr === '—') return '—';
     const d = new Date(dateStr + 'T12:00:00');
+    if (Number.isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
@@ -579,8 +693,70 @@ function _formatDateTimeRo(d) {
     });
 }
 
-function _buildWhatsAppMsg(orderId, total, advance, date, time, name) {
-    return `Bună! Am plasat o comandă pe BioCake.ro 🎂\n\nNumăr comandă: #${orderId}\nNume: ${name}\nLivrare: ${_formatDateRo(date)} la ${time}\n\nTotal comandă: ${total.toFixed(2)} RON\nAvans de plătit (50%): ${advance.toFixed(2)} RON\n\nAștept confirmarea și link-ul de plată. Mulțumesc! 🙏`;
+function _buildWhatsAppMsg(orderId, total, payAmount, payMode, date, time, name, paidConfirmed) {
+    const payLine = payMode === 'full'
+        ? `Plată integrală: ${payAmount.toFixed(2)} RON`
+        : `Avans (50%): ${payAmount.toFixed(2)} RON`;
+    const statusLine = paidConfirmed
+        ? 'Am finalizat plata pe Netopia.'
+        : 'Am plasat comanda / revin după plată.';
+    const when = date && date !== '—' && time
+        ? `Livrare: ${_formatDateRo(date)} la ${time}\n`
+        : '';
+    return `Bună! Comandă BioCake.ro 🎂\n\nNumăr: #${orderId}\nNume: ${name || '—'}\n${when}Total: ${total.toFixed(2)} RON\n${payLine}\n\n${statusLine} Mulțumesc! 🙏`;
+}
+
+/**
+ * După redirect Netopia (?paid=1&order=uuid).
+ */
+function handlePaymentReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get('paid');
+    const orderId = params.get('order');
+    if (paid === null || !orderId) return false;
+
+    const clean = window.location.pathname + (window.location.hash || '');
+    window.history.replaceState({}, '', clean || '/');
+
+    const paidOk = paid === '1' || paid === 'true';
+    _injectCheckoutHTML();
+
+    let snap = null;
+    try {
+        snap = JSON.parse(sessionStorage.getItem('biocake_last_order') || 'null');
+    } catch (_) { snap = null; }
+
+    const total = (snap && snap.id === orderId) ? Number(snap.total) || 0 : 0;
+    const advanceDue = (snap && snap.id === orderId)
+        ? Number(snap.advanceDue) || 0
+        : Math.round(total * 0.5 * 100) / 100;
+    const payMode = (snap && snap.id === orderId && snap.payMode) || 'advance';
+    const fd = {
+        name: (snap && snap.name) || '',
+        date: (snap && snap.date) || '—',
+        time: (snap && snap.time) || '—',
+        payMode,
+    };
+
+    const overlay = document.getElementById('checkout-overlay');
+    if (overlay) {
+        overlay.classList.add('co-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    _showSuccess(
+        {
+            order: { id: orderId },
+            total,
+            advanceDue,
+            payMode,
+            paidConfirmed: paidOk,
+        },
+        fd,
+    );
+
+    try { sessionStorage.removeItem('biocake_last_order'); } catch (_) { /* ignore */ }
+    return true;
 }
 
 /* ── Inject HTML (singleton) ─────────────────────────── */

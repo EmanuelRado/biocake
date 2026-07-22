@@ -2982,14 +2982,13 @@ select.co-input-time {
     margin-top: 4px;
 }
 
-/* Advance box */
+/* Advance / pay mode box */
 .co-advance-box {
     background: linear-gradient(135deg, var(--pink-soft), var(--vanilla-dark));
     border: 1.5px solid rgba(252, 109, 159, 0.3);
     border-radius: var(--radius-sm);
     padding: 14px 16px;
     margin-bottom: 18px;
-    text-align: center;
 }
 
 .co-advance-label {
@@ -2998,19 +2997,66 @@ select.co-input-time {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--pink);
-    margin-bottom: 4px;
+    margin-bottom: 10px;
 }
 
-.co-advance-amount {
-    font-family: var(--font-display);
-    font-size: 1.8rem;
+.co-pay-modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.co-pay-mode {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px;
+    background: var(--white);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+
+.co-pay-mode input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.co-pay-mode--active {
+    border-color: var(--pink);
+    box-shadow: 0 0 0 3px var(--pink-glow);
+}
+
+.co-pay-mode-title {
+    font-size: 0.78rem;
+    font-weight: 600;
     color: var(--choco);
+}
+
+.co-pay-mode-amount {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--pink);
+    line-height: 1.2;
+}
+
+.co-pay-mode-note {
+    font-size: 0.68rem;
+    color: var(--text-muted);
 }
 
 .co-advance-note {
     font-size: 0.68rem;
     color: var(--text-muted);
-    margin-top: 3px;
+    margin-top: 10px;
+    line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+    .co-pay-modes { grid-template-columns: 1fr; }
 }
 
 /* Submit button */

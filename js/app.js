@@ -7,12 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeaderScroll();
     initMobileNav();
     initContactLinks();
-    initCartUI();    // Drawer coș
-    initCheckout();  // Overlay checkout (Etapa 4)
-    initCatalog();   // Catalog + filtrare (async Supabase)
+    initCartUI();
+    initCheckout();
+    initCatalog();
 
-    // Restaurează badge-ul coșului din localStorage la reload
     updateCartBadge(getCartCount());
+
+    // Return din Netopia (?paid=1&order=…)
+    if (typeof handlePaymentReturn === 'function') {
+        handlePaymentReturn();
+    }
 });
 
 /* ── Contact din config.js ───────────────────────────── */

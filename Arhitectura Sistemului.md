@@ -15,7 +15,7 @@
 | **Realtime** | Supabase Realtime | Comenzi noi în admin |
 | **Găzduire** | Netlify | `https://biocake.ro` ← GitHub `main` |
 | **PWA / Push** | SW + Web Push (VAPID) | Admin instalabil |
-| **Plăți** | Netopia (planificat) | Momentan: avans 50% + WhatsApp manual |
+| **Plăți** | Netopia Payments API v2 | Hosted page; EF `netopia-start` + `netopia-ipn`; 50% sau 100% |
 
 ---
 
@@ -63,6 +63,11 @@ erDiagram
         numeric delivery_fee
         numeric total
         numeric advance_due
+        text pay_mode "advance|full"
+        text payment_status "none|started|paid|failed|canceled"
+        numeric amount_paid
+        text netopia_order_id
+        timestamptz paid_at
     }
 
     order_items {
@@ -110,33 +115,42 @@ sequenceDiagram
     actor Client
     participant FE as Website
     participant RPC as place_order RPC
+    participant Start as netopia_start
+    participant Netopia
+    participant IPN as netopia_ipn
     participant DB as Supabase
     actor Admin as Admin PWA
 
-    Client->>FE: Coș + checkout (validare 48h / sloturi)
-    FE->>RPC: rpc place_order (slug+qty, date client)
-    RPC->>DB: Citește prețuri products active
-    RPC->>DB: INSERT orders + order_items (atomic)
-    RPC-->>FE: id, total, advance_due
-    FE-->>Client: Succes + WhatsApp
-    DB-->>Admin: Realtime + Push webhook
-    Admin->>DB: UPDATE status
+    Client->>FE: Checkout + payMode advance|full
+    FE->>RPC: rpc place_order
+    RPC->>DB: INSERT orders + items
+    RPC-->>FE: id total advance_due
+    FE->>Start: orderId + payMode
+    Start->>DB: amount from DB
+    Start->>Netopia: card/start
+    Netopia-->>Start: paymentURL
+    Start-->>FE: paymentUrl
+    FE->>Netopia: redirect
+    Netopia->>IPN: notify
+    IPN->>DB: status paid
+    Netopia->>FE: redirect paid=1
+    DB-->>Admin: Realtime
 ```
 
 ---
 
 ## 5. Panoul de Administrare
 
-**Status: ✅ IMPLEMENTAT** (+ PWA, push, P0 security, CRUD imagini).
+**Status: ✅ IMPLEMENTAT** (+ PWA, push, P0 security, CRUD imagini, status plată Netopia).
 
 * Auth persist (`biocake-auth`)
-* Comenzi: realtime, filtre, status, delete, WhatsApp
+* Comenzi: realtime, filtre, status, delete, WhatsApp, afișare `payment_status` / `pay_mode`
 * Produse: CRUD, Storage upload, reorder, `piece_grams`, greutăți kg
 * PWA: `sw.js`, manifest, iconițe
 
 ### Planificat
-* Calendar / Netopia webhook / layout admin 2-col pe desktop
-
+* Calendar / layout admin 2-col pe desktop
+* Link plată Netopia pentru comenzi custom
 ---
 
 ## 6. Fișiere JS publice (ordine load)

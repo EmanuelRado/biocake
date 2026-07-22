@@ -125,10 +125,13 @@ gantt
 * **Catalog / UX post-audit ✅ 2026-07-19…22**:
   - Categorie **De Post** (`de-post`), `piece_grams`, escape XSS, pills greutate din produs, selector cutie, a11y drawer, `js/config.js`.
   - Mesaj brand **fără zahăr rafinat** (hero, #despre, footer) + SEO/OG/JSON-LD + fonts non-blocking.
+* **Netopia Payments (cod) ✅ 2026-07-22**:
+  - Selector checkout 50%/100%, EF `netopia-start` + `netopia-ipn`, `supabase-netopia.sql`.
+  - Setup: `NETOPIA.md` (secrets + deploy + test sandbox).
 * **Audit Tehnic & SEO** (rămâne):
+  - Deploy Netopia pe Supabase + test.
   - Conversie imagini WebP + resize la upload.
   - Telefon/WhatsApp real în `js/config.js`.
-  - Netopia Payments.
   - Lighthouse mobil >90 (după WebP).
 
 > [!note] Documentație

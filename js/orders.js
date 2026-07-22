@@ -1,6 +1,7 @@
 /**
  * BioCake — orders.js
  * Plasează comenzi via RPC place_order (preț din DB, insert atomic).
+ * Pornește plata Netopia via Edge Function netopia-start.
  */
 
 /* ── Livrare (UI coș / checkout — server recalculează la submit) ─ */
@@ -12,6 +13,14 @@ const DELIVERY_FEES = {
 function calculateOrderDeliveryFee(zone, subtotal) {
     const cfg = DELIVERY_FEES[zone] || DELIVERY_FEES.bucuresti;
     return subtotal >= cfg.free_threshold ? 0 : cfg.fee;
+}
+
+function _functionsBaseUrl() {
+    return 'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1';
+}
+
+function _anonKey() {
+    return 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
 }
 
 /* ── Submit order ────────────────────────────────────── */
@@ -64,5 +73,40 @@ async function submitOrder({
         deliveryFee: Number(data.delivery_fee),
         total:       Number(data.total),
         advanceDue:  Number(data.advance_due),
+    };
+}
+
+/**
+ * Pornește plata Netopia (hosted). Amount din DB pe server.
+ * @param {string} orderId
+ * @param {'advance'|'full'} payMode
+ */
+async function startNetopiaPayment(orderId, payMode) {
+    if (!orderId) throw new Error('orderId lipsă');
+    if (payMode !== 'advance' && payMode !== 'full') {
+        throw new Error('Mod de plată invalid');
+    }
+
+    const url = `${_functionsBaseUrl()}/netopia-start`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${_anonKey()}`,
+            apikey: _anonKey(),
+        },
+        body: JSON.stringify({ orderId, payMode }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.paymentUrl) {
+        const msg = data.error || data.message || `Eroare plată (${res.status})`;
+        throw new Error(msg);
+    }
+
+    return {
+        paymentUrl: data.paymentUrl,
+        amount: Number(data.amount),
+        payMode: data.payMode || payMode,
     };
 }

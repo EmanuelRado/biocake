@@ -24,9 +24,12 @@ python -m http.server 8080
 ## Flux comandă (important)
 
 1. Client adaugă în coș (prețuri UI din catalog).
-2. Checkout validează pe client (48h, Lun–Sâm, sloturi).
-3. Submit apelează RPC Supabase **`place_order`** — prețuri din DB, insert atomic.
-4. Succes + WhatsApp (număr din `js/config.js`).
+2. Checkout: alege **avans 50%** sau **integral 100%**.
+3. Submit → RPC **`place_order`** (prețuri din DB).
+4. Edge Function **`netopia-start`** → redirect Netopia.
+5. IPN **`netopia-ipn`** → `status=paid`.
+
+Setup plăți: vezi **`NETOPIA.md`**.
 
 Nu insera direct în `orders` / `order_items` din client.
 

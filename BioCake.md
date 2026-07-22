@@ -24,7 +24,7 @@ tags:
 | **Tip Proiect** | Magazin Online Complet (Frontend + Backend + Gestiune Stoc) |
 | **Client** | BioCake (Dream project pentru mama lui Emi) |
 | **Locație** | Livrare exclusivă în București (Fără ridicare personală) |
-| **Status** | 🟡 Etapa 6: Ziua 3 (SEO/mesaj brand) — rămân telefon real, WebP pipeline, Netopia |
+| **Status** | 🟡 Etapa 6: Netopia (cod gata — de deployat) · telefon real · WebP |
 | **Data creare** | 2026-07-03 |
 | **Ultima actualizare** | 2026-07-19 |
 | **URL live** | https://biocake.ro |
@@ -152,7 +152,8 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Aplicație Admin dedicată**: Transformarea panoului de administrare într-o aplicație de sine stătătoare (PWA dedicat / Aplicație Mobilă). *(Notat pe 10.07.2026)* ✅ 2026-07-13
 - [x] **Reordonare Imagini**: Reordine în admin (săgeți / drag) — prima imagine = copertă. ✅ 2026-07
 - [x] **SEO / OG / fonts non-blocking / mesaj fără zahăr rafinat** — Ziua 3 (parțial) ✅ 2026-07-22
+- [x] **Netopia Payments (cod)** — checkout 50%/100%, EF start+IPN, SQL — ✅ 2026-07-22 (deploy: vezi [[NETOPIA]])
+- [ ] **Deploy Netopia** — SQL + secrets + functions pe Supabase + test sandbox
 - [ ] **Pipeline WebP / resize la upload** — rămâne
-- [ ] **Netopia Payments** — avans automat
 - [ ] **Rate-limit comenzi** pe RPC public
 

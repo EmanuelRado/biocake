@@ -405,9 +405,29 @@ function _renderOrderCard(order) {
     const advance = _formatCurrency(order.advance_due);
     const shortId = order.id ? order.id.slice(0, 8).toUpperCase() : '';
 
+    const payModeLabel = order.pay_mode === 'full'
+        ? 'Integral 100%'
+        : order.pay_mode === 'advance'
+            ? 'Avans 50%'
+            : null;
+    const payStatusLabel = {
+        none: 'Neinițiată',
+        started: 'În curs',
+        paid: 'Plătită',
+        failed: 'Eșuată',
+        canceled: 'Anulată',
+    }[order.payment_status] || null;
+    const amountPaid = order.amount_paid != null ? _formatCurrency(order.amount_paid) : null;
+
     const waPhone = _formatWAPhone(order.customer_phone || '');
+    const statusLabel = STATUS_LABEL[order.status] ? STATUS_LABEL[order.status].toLowerCase() : order.status;
+    const payHint = order.payment_status === 'paid'
+        ? ` Plata (${payModeLabel || 'online'}) este confirmată.`
+        : order.payment_status === 'started'
+            ? ' Plata Netopia este în curs.'
+            : '';
     const waText  = encodeURIComponent(
-        `Bună ${order.customer_name}, comanda ta BioCake pentru ${whenStr} este ${STATUS_LABEL[order.status] ? STATUS_LABEL[order.status].toLowerCase() : order.status}. Mulțumim! 🎂`
+        `Bună ${order.customer_name}, comanda ta BioCake pentru ${whenStr} este ${statusLabel}.${payHint} Mulțumim! 🎂`
     );
 
     const nextSt = NEXT_STATUS[order.status];
@@ -431,13 +451,14 @@ function _renderOrderCard(order) {
         <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
         <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
         ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
+        ${payStatusLabel ? `<div class="meta-row">${icon('check')} Plată: <strong>${_esc(payStatusLabel)}</strong>${payModeLabel ? ` · ${_esc(payModeLabel)}` : ''}${amountPaid ? ` · ${_esc(amountPaid)}` : ''}</div>` : ''}
     </div>
 
     <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
 
     <div class="order-totals">
         <span>Total: <strong>${total}</strong></span>
-        <span class="advance">Avans: <strong>${advance}</strong></span>
+        <span class="advance">${order.pay_mode === 'full' ? 'Plătit:' : 'Avans:'} <strong>${order.pay_mode === 'full' && amountPaid ? amountPaid : advance}</strong></span>
     </div>
 
     <div class="order-actions">
