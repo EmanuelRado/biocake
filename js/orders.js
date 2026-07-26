@@ -111,10 +111,7 @@ async function startNetopiaPayment(orderId, payMode) {
     };
 }
 
-/**
- * Confirmă plata la Netopia (status API) și actualizează comanda în DB.
- * Folosit după redirect (?paid=1) și din admin dacă IPN-ul întârzie.
- */
+/** Confirmă plata via Netopia status API + update DB. */
 async function confirmNetopiaPayment(orderId) {
     if (!orderId) throw new Error('orderId lipsă');
 

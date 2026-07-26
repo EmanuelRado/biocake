@@ -724,11 +724,7 @@ function _buildWhatsAppMsg(orderId, total, payAmount, payMode, date, time, name,
     return `Bună! Comandă BioCake.ro 🎂\n\nNumăr: #${orderId}\nNume: ${name || '—'}\n${when}Total: ${total.toFixed(2)} RON\n${payLine}\n\n${statusLine} Mulțumesc! 🙏`;
 }
 
-/**
- * După redirect Netopia (?paid=1&order=uuid).
- * Datele comenzii vin din server (nu doar sessionStorage) — altfel, după
- * redirect de pe file:// local / alt tab, apar 0,00 RON.
- */
+/** Return Netopia (?paid=1&order=uuid) — totalurile se completează din server. */
 function handlePaymentReturn() {
     const params = new URLSearchParams(window.location.search);
     const paid = params.get('paid');
@@ -794,32 +790,24 @@ function handlePaymentReturn() {
         if (o.time) state.fd.time = o.time;
     };
 
-    // Confirmă plata (IPN poate întârzia). Retry: Netopia status uneori e lag după redirect.
-    if (typeof confirmNetopiaPayment === 'function') {
-        const tryConfirm = (attempt) => {
-            confirmNetopiaPayment(orderId)
-                .then((r) => {
-                    applyOrder(r.order);
-                    if (r.confirmed || r.alreadyPaid) {
-                        state.paidConfirmed = true;
-                        show();
-                        return;
-                    }
-                    if (!paidHint) state.paidConfirmed = false;
-                    show();
-                    if (attempt < 3) {
-                        setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
-                    }
-                })
-                .catch((err) => {
-                    console.warn('[checkout] confirmNetopiaPayment', attempt, err);
-                    if (attempt < 3) {
-                        setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
-                    }
-                });
-        };
-        tryConfirm(1);
-    }
+    const tryConfirm = (attempt) => {
+        if (typeof confirmNetopiaPayment !== 'function') return;
+        confirmNetopiaPayment(orderId)
+            .then((r) => {
+                applyOrder(r.order);
+                if (r.confirmed || r.alreadyPaid) state.paidConfirmed = true;
+                else if (!paidHint) state.paidConfirmed = false;
+                show();
+                if (!(r.confirmed || r.alreadyPaid) && attempt < 3) {
+                    setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
+                }
+            })
+            .catch((err) => {
+                console.warn('[checkout] confirmNetopiaPayment', attempt, err);
+                if (attempt < 3) setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
+            });
+    };
+    tryConfirm(1);
 
     try { sessionStorage.removeItem('biocake_last_order'); } catch (_) { /* ignore */ }
     return true;

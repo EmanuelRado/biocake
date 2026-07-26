@@ -342,32 +342,35 @@ async function loadOrders() {
     _autoVerifyStartedPayments();
 }
 
-/** Dacă IPN-ul întârzie, sincronizează din Netopia comenzile „În curs”. */
+async function _confirmNetopiaOrder(orderId) {
+    const anon = 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
+    const res = await fetch(
+        'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${anon}`,
+                apikey: anon,
+            },
+            body: JSON.stringify({ orderId }),
+        },
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Eroare ${res.status}`);
+    return data;
+}
+
 async function _autoVerifyStartedPayments() {
     const pending = (_orders || []).filter(
         o => o.payment_status === 'started' && o.netopia_ntp_id,
     );
     if (!pending.length) return;
 
-    const anon = 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
     let changed = false;
-
     for (const order of pending) {
         try {
-            const res = await fetch(
-                'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${anon}`,
-                        apikey: anon,
-                    },
-                    body: JSON.stringify({ orderId: order.id }),
-                },
-            );
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) continue;
+            const data = await _confirmNetopiaOrder(order.id);
             if (data.confirmed || data.payment_status === 'paid' || data.alreadyPaid) {
                 order.payment_status = 'paid';
                 order.status = 'paid';
@@ -378,7 +381,6 @@ async function _autoVerifyStartedPayments() {
             console.warn('[admin] autoVerify', order.id, err);
         }
     }
-
     if (changed) _renderOrders();
 }
 
@@ -590,7 +592,6 @@ async function advanceOrderStatus(orderId, newStatus) {
     _renderOrders();
 }
 
-/** Interogă Netopia (status API) și marchează comanda plătită dacă e confirmată. */
 async function verifyNetopiaPayment(orderId, btn) {
     if (!orderId) return;
     const card = document.querySelector(`.order-card[data-id="${orderId}"]`);
@@ -601,38 +602,19 @@ async function verifyNetopiaPayment(orderId, btn) {
     if (card) card.classList.add('updating');
 
     try {
-        const anon = 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
-        const res = await fetch(
-            'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${anon}`,
-                    apikey: anon,
-                },
-                body: JSON.stringify({ orderId }),
-            },
-        );
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            throw new Error(data.error || `Eroare ${res.status}`);
-        }
-
+        const data = await _confirmNetopiaOrder(orderId);
         const order = _orders.find(o => o.id === orderId);
+        const paid = data.confirmed || data.payment_status === 'paid' || data.alreadyPaid;
         if (order) {
             if (data.payment_status) order.payment_status = data.payment_status;
             if (data.status) order.status = data.status;
             if (data.amount != null) order.amount_paid = data.amount;
-            if (data.confirmed || data.payment_status === 'paid') {
+            if (paid) {
                 order.payment_status = 'paid';
                 order.status = 'paid';
             }
         }
-
-        if (data.confirmed || data.payment_status === 'paid' || data.alreadyPaid) {
-            // ok — realtime / re-render
-        } else {
+        if (!paid) {
             alert(`Plata nu e încă confirmată la Netopia (status: ${data.ntpStatus ?? data.payment_status ?? 'necunoscut'}).`);
         }
         _renderOrders();

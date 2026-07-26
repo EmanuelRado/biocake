@@ -24,7 +24,6 @@ const IS_LIVE = (Deno.env.get('NETOPIA_IS_LIVE') ?? 'false').toLowerCase() === '
 const SITE_URL = (Deno.env.get('SITE_URL') ?? 'https://biocake.ro').replace(/\/$/, '');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 
-// URL-uri oficiale din SDK Netopia (composer BaseHttpClient)
 const START_URL = IS_LIVE
   ? 'https://secure.netopia-payments.com/api/payment/card/start'
   : 'https://secure-sandbox.netopia-payments.com/payment/card/start';
@@ -181,8 +180,7 @@ Deno.serve(async (req) => {
     });
 
     const netopiaJson = await netopiaRes.json().catch(() => ({}));
-    // Răspuns Netopia: { payment: { paymentURL, ntpID }, error: { code: "101", ... } }
-    // Cod 101 = redirect la pagina de plată (succes pentru hosted page).
+    // Cod 101 = redirect hosted page (succes)
     const errCode = String(netopiaJson?.error?.code ?? '');
     const paymentUrl =
       netopiaJson?.payment?.paymentURL ||
@@ -198,15 +196,9 @@ Deno.serve(async (req) => {
     const isRedirectOk = errCode === '101' && !!paymentUrl;
     if (!netopiaRes.ok && !isRedirectOk) {
       console.error('[netopia-start] HTTP', netopiaRes.status, netopiaJson);
-      const hint = netopiaRes.status === 401
-        ? ' (401 Unauthorized: verifică NETOPIA_API_KEY generat în sandbox + NETOPIA_POS_SIGNATURE exactă + NETOPIA_IS_LIVE=false)'
-        : '';
       return json({
-        error: `Netopia a refuzat inițierea plății${hint}`,
+        error: 'Netopia a refuzat inițierea plății',
         details: netopiaJson,
-        status: netopiaRes.status,
-        endpoint: START_URL,
-        isLive: IS_LIVE,
       }, 502);
     }
 
@@ -230,10 +222,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', order.id);
 
-    if (updErr) {
-      console.error('[netopia-start] DB update', updErr);
-      // tot redirectăm — plata e pornită
-    }
+    if (updErr) console.error('[netopia-start] DB update', updErr);
 
     return json({
       paymentUrl,

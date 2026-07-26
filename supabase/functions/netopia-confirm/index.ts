@@ -145,8 +145,6 @@ Deno.serve(async (req) => {
       }, 502);
     }
 
-    // Răspuns tipic: { payment: { status, amount, ntpID }, error: { code } }
-    // sau nested sub data
     const payment =
       statusJson?.payment ||
       statusJson?.data?.payment ||
@@ -191,10 +189,7 @@ Deno.serve(async (req) => {
       ntpStatus,
       amount: amount ?? order.amount_paid,
       confirmed: mapped.payment_status === 'paid',
-      order: {
-        ...orderSummary,
-        payMode: order.pay_mode || orderSummary.payMode,
-      },
+      order: orderSummary,
     });
   } catch (e) {
     console.error('[netopia-confirm]', e);

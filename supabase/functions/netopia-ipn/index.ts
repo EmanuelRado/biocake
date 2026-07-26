@@ -79,7 +79,6 @@ async function importPublicKey(pem: string) {
   try {
     return await jose.importSPKI(normalized, 'RS512');
   } catch (e) {
-    // Uneori panoul dă CERTIFICATE fără marker clar după paste
     try {
       return await jose.importX509(normalized, 'RS512');
     } catch {
@@ -152,11 +151,6 @@ Deno.serve(async (req) => {
     req.headers.get('verification-token') ||
     '';
 
-  console.log('[netopia-ipn] hit', {
-    hasToken: !!verificationToken,
-    bodyLen: rawBody.length,
-  });
-
   try {
     if (!verificationToken) {
       return ipnFail('Missing Verification-token', 0x10000102);
@@ -175,8 +169,6 @@ Deno.serve(async (req) => {
     if (!orderID || Number.isNaN(ntpStatus)) {
       return ipnFail('IPN payload invalid');
     }
-
-    console.log('[netopia-ipn] verified', { orderID, ntpStatus, ntpID });
 
     const mapped = mapPaymentStatus(ntpStatus);
     const patch: Record<string, unknown> = {
