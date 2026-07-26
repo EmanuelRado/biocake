@@ -294,12 +294,15 @@ function _updateTotals({ subtotal, delivery, total, remaining, threshold, zone }
 
     if (totalEl) totalEl.textContent = `${total.toFixed(2).replace('.', ',')} RON`;
 
-    // Bară progres livrare gratuită
+    // Bară progres + mesaj livrare gratuită
     if (freeBarWrap && freeBar && freeLabel) {
-        if (delivery === 0) {
+        if (delivery === 0 || remaining <= 0) {
             freeBarWrap.style.display = 'none';
+            freeLabel.textContent = '';
+            freeLabel.hidden = true;
         } else {
             freeBarWrap.style.display = 'block';
+            freeLabel.hidden = false;
             const pct = Math.min(100, (subtotal / threshold) * 100);
             freeBar.style.width = `${pct}%`;
             freeLabel.textContent =
