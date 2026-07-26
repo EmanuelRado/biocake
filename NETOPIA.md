@@ -20,11 +20,14 @@ Integrare **API v2** (hosted page, `instrument: null`) via Supabase Edge Functio
 
 | Secret | Valoare |
 |--------|---------|
-| `NETOPIA_API_KEY` | API key din panoul Netopia (sandbox sau live) |
-| `NETOPIA_POS_SIGNATURE` | POS Signature |
-| `NETOPIA_PUBLIC_KEY` | Cheia publică RSA PEM (pentru verificarea IPN) — poți folosi `\n` pentru newline în secret |
+| `NETOPIA_API_KEY` | API key din panoul Netopia — **text scurt** tip `ApiKey_…` (NU fișier PEM / PRIVATE KEY) |
+| `NETOPIA_POS_SIGNATURE` | POS Signature — format tip `XXXX-XXXX-XXXX-XXXX` |
+| `NETOPIA_PUBLIC_KEY` | Cheia **publică** RSA PEM (`-----BEGIN PUBLIC KEY-----` …) pentru IPN |
 | `NETOPIA_IS_LIVE` | `false` = sandbox, `true` = producție |
 | `SITE_URL` | `https://biocake.ro` |
+
+> [!warning]
+> Nu pune **PRIVATE KEY** în `NETOPIA_API_KEY`. Asta rupe header-ul Authorization și plata nu pornește.
 
 `SUPABASE_URL` și `SUPABASE_SERVICE_ROLE_KEY` sunt injectate automat.
 

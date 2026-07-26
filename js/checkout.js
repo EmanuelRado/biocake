@@ -441,17 +441,35 @@ function _friendlyOrderError(raw) {
         'Cantitate sub minim',
         'Cantitate peste maxim',
         'Linie de comanda',
+        'NETOPIA_API_KEY',
+        'Netopia nu este configurat',
+        'Netopia a refuzat',
+        'Nu am primit URL',
+        'payMode invalid',
+        'Comanda nu există',
+        'deja plătită',
+        'Sumă invalidă',
     ];
     if (known.some(k => msg.includes(k))) {
-        // Mesaje RPC (fără diacritice) → variantă RO pe UI
         if (msg.includes('Nu livram duminica')) return 'Nu livrăm duminica. Alege o zi între luni și sâmbătă.';
         if (msg.includes('Livrarea trebuie')) return 'Livrarea trebuie să fie la minimum 48 de ore.';
         if (msg.includes('Ora de livrare')) return 'Ora de livrare trebuie să fie între 08:00 și 20:00 (din 30 în 30 de minute).';
         if (msg.includes('Cosul este gol')) return 'Coșul este gol.';
         if (msg.includes('Produs indisponibil')) return 'Un produs din coș nu mai este disponibil. Reîncarcă pagina.';
         if (msg.includes('Cantitate sub minim')) return 'Cantitatea este sub minimul de comandă pentru un produs.';
+        if (msg.includes('NETOPIA_API_KEY') || msg.includes('PEM')) {
+            return 'Configurare Netopia: API Key greșit în secrets (nu pune cheia PEM acolo).';
+        }
+        if (msg.includes('Netopia nu este configurat')) {
+            return 'Plățile Netopia nu sunt configurate încă pe server.';
+        }
+        if (msg.includes('Netopia a refuzat') || msg.includes('Nu am primit URL')) {
+            return 'Netopia a refuzat plata. Verifică API Key / POS Signature (sandbox).';
+        }
         return msg;
     }
+    // Eroare plată: arată mesajul scurt dacă e util
+    if (msg.length > 0 && msg.length < 220 && !msg.includes('BEGIN ')) return msg;
     return 'A apărut o eroare tehnică. Te rugăm să ne contactezi direct pe WhatsApp.';
 }
 

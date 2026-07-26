@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
     if (!API_KEY || !POS_SIGNATURE) {
       return json({ error: 'Netopia nu este configurat (lipsesc secrets).' }, 500);
     }
+    if (API_KEY.includes('BEGIN ') || API_KEY.includes('PRIVATE KEY') || API_KEY.includes('PUBLIC KEY')) {
+      return json({
+        error: 'NETOPIA_API_KEY greșit: ai pus o cheie PEM. Folosește API Key-ul din panoul Netopia (text tip ApiKey_…). Cheia publică PEM merge în NETOPIA_PUBLIC_KEY.',
+      }, 500);
+    }
 
     const body = await req.json().catch(() => ({}));
     const orderId = String(body.orderId || '').trim();

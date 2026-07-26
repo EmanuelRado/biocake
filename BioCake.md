@@ -98,6 +98,7 @@ Designul magazinului se bazează pe identitatea logo-ului oficial, completată c
 
 * **Timp de preparare**: Comandă cu **minimum 48 de ore înainte** pentru a asigura ingredientele proaspete și timpul de decor.
 * **Procesator de Plăți**: **Netopia Payments** (procesator român autorizat).
+* **Facturare**: **FGO** (programul de emitere facturi). *(Notat pe 18.07.2026)*
 * **Reguli de Plată**:
   - **Comenzi Directe pe Site**: Clientul poate alege să achite online un **avans de 50%** sau **integral (100%)** prin Netopia Payments. În procesul de comandă se afișează o informare discretă privind opțiunea de avans și notificarea că, deoarece torturile sunt realizate manual, greutatea finală poate înregistra o marjă de eroare de **sub 100 de grame** față de cea comandată (cu regularizare la livrare).
   - **Comenzi Custom (Candy Bar, Torturi Speciale)**: Clientul completează formularul de detalii, se stabilește prețul final cu administratorul (mama), apoi se trimite manual un **link de plată Netopia** pentru achitarea avansului sau a sumei totale.
@@ -143,6 +144,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Opțiuni Greutate Torturi**: Nu există opțiuni pentru selectarea greutății la torturi (1.2kg, 1.8kg, 2.4kg, etc.). *(Notat pe 08.07.2026)* ✅ 2026-07-13
 - [x] **Greutate Aproximativă**: Câmpul apare completat cu `true` pentru torturi (trebuie verificat dacă activează greșit notificarea de marjă de 100g). *(Notat pe 08.07.2026)* ✅ 2026-07-13
 - [x] **Catalog nu se încarcă**: `WEIGHT_OPTIONS` duplicat în `data.js` (SyntaxError). ✅ 2026-07-19
+- [ ] **Notificare Livrare Gratuită**: Mesajul „mai adaugă x RON pentru livrare gratuită” rămâne afișat și după ce pragul de livrare gratuită a fost atins. *(Notat pe 18.07.2026)*
 
 ---
 
@@ -153,6 +155,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Reordonare Imagini**: Reordine în admin (săgeți / drag) — prima imagine = copertă. ✅ 2026-07
 - [x] **SEO / OG / fonts non-blocking / mesaj fără zahăr rafinat** — Ziua 3 (parțial) ✅ 2026-07-22
 - [x] **Netopia Payments (cod)** — checkout 50%/100%, EF start+IPN, SQL — ✅ 2026-07-22 (deploy: vezi [[NETOPIA]])
+- [ ] **Modul Recenzii**: Adăugarea unei secțiuni de recenzii și evaluări din partea clienților pe site. *(Notat pe 18.07.2026)*
 - [ ] **Deploy Netopia** — SQL + secrets + functions pe Supabase + test sandbox
 - [ ] **Pipeline WebP / resize la upload** — rămâne
 - [ ] **Rate-limit comenzi** pe RPC public
