@@ -110,3 +110,38 @@ async function startNetopiaPayment(orderId, payMode) {
         payMode: data.payMode || payMode,
     };
 }
+
+/**
+ * Confirmă plata la Netopia (status API) și actualizează comanda în DB.
+ * Folosit după redirect (?paid=1) și din admin dacă IPN-ul întârzie.
+ */
+async function confirmNetopiaPayment(orderId) {
+    if (!orderId) throw new Error('orderId lipsă');
+
+    const url = `${_functionsBaseUrl()}/netopia-confirm`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${_anonKey()}`,
+            apikey: _anonKey(),
+        },
+        body: JSON.stringify({ orderId }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const msg = data.error || data.message || `Eroare confirmare (${res.status})`;
+        throw new Error(msg);
+    }
+
+    return {
+        confirmed: !!data.confirmed || data.payment_status === 'paid',
+        payment_status: data.payment_status,
+        status: data.status,
+        alreadyPaid: !!data.alreadyPaid,
+        ntpStatus: data.ntpStatus,
+        amount: data.amount != null ? Number(data.amount) : null,
+        order: data.order || null,
+    };
+}

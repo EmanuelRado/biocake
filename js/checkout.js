@@ -726,6 +726,8 @@ function _buildWhatsAppMsg(orderId, total, payAmount, payMode, date, time, name,
 
 /**
  * După redirect Netopia (?paid=1&order=uuid).
+ * Datele comenzii vin din server (nu doar sessionStorage) — altfel, după
+ * redirect de pe file:// local / alt tab, apar 0,00 RON.
  */
 function handlePaymentReturn() {
     const params = new URLSearchParams(window.location.search);
@@ -736,24 +738,26 @@ function handlePaymentReturn() {
     const clean = window.location.pathname + (window.location.hash || '');
     window.history.replaceState({}, '', clean || '/');
 
-    const paidOk = paid === '1' || paid === 'true';
+    const paidHint = paid === '1' || paid === 'true';
     _injectCheckoutHTML();
 
     let snap = null;
     try {
         snap = JSON.parse(sessionStorage.getItem('biocake_last_order') || 'null');
+        if (snap && snap.id !== orderId) snap = null;
     } catch (_) { snap = null; }
 
-    const total = (snap && snap.id === orderId) ? Number(snap.total) || 0 : 0;
-    const advanceDue = (snap && snap.id === orderId)
-        ? Number(snap.advanceDue) || 0
-        : Math.round(total * 0.5 * 100) / 100;
-    const payMode = (snap && snap.id === orderId && snap.payMode) || 'advance';
-    const fd = {
-        name: (snap && snap.name) || '',
-        date: (snap && snap.date) || '—',
-        time: (snap && snap.time) || '—',
-        payMode,
+    const state = {
+        total: snap ? Number(snap.total) || 0 : 0,
+        advanceDue: snap ? Number(snap.advanceDue) || 0 : 0,
+        payMode: (snap && snap.payMode) || 'advance',
+        fd: {
+            name: (snap && snap.name) || '',
+            date: (snap && snap.date) || '—',
+            time: (snap && snap.time) || '—',
+            payMode: (snap && snap.payMode) || 'advance',
+        },
+        paidConfirmed: paidHint,
     };
 
     const overlay = document.getElementById('checkout-overlay');
@@ -762,16 +766,46 @@ function handlePaymentReturn() {
         document.body.style.overflow = 'hidden';
     }
 
-    _showSuccess(
-        {
-            order: { id: orderId },
-            total,
-            advanceDue,
-            payMode,
-            paidConfirmed: paidOk,
-        },
-        fd,
-    );
+    const show = () => {
+        _showSuccess(
+            {
+                order: { id: orderId },
+                total: state.total,
+                advanceDue: state.advanceDue,
+                payMode: state.payMode,
+                paidConfirmed: state.paidConfirmed,
+            },
+            state.fd,
+        );
+    };
+
+    show();
+
+    const applyOrder = (o) => {
+        if (!o) return;
+        if (o.total != null) state.total = Number(o.total) || 0;
+        if (o.advanceDue != null) state.advanceDue = Number(o.advanceDue) || 0;
+        if (o.payMode) {
+            state.payMode = o.payMode;
+            state.fd.payMode = o.payMode;
+        }
+        if (o.name) state.fd.name = o.name;
+        if (o.date) state.fd.date = o.date;
+        if (o.time) state.fd.time = o.time;
+    };
+
+    if (typeof confirmNetopiaPayment === 'function') {
+        confirmNetopiaPayment(orderId)
+            .then((r) => {
+                applyOrder(r.order);
+                if (r.confirmed || r.alreadyPaid) state.paidConfirmed = true;
+                else if (!paidHint) state.paidConfirmed = false;
+                show();
+            })
+            .catch((err) => {
+                console.warn('[checkout] confirmNetopiaPayment', err);
+            });
+    }
 
     try { sessionStorage.removeItem('biocake_last_order'); } catch (_) { /* ignore */ }
     return true;

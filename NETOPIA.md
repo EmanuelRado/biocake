@@ -9,8 +9,9 @@ Integrare **API v2** (hosted page, `instrument: null`) via Supabase Edge Functio
 | `supabase-netopia.sql` | Coloane plată pe `orders` |
 | `supabase/functions/netopia-start/` | Pornește plata, returnează `paymentUrl` |
 | `supabase/functions/netopia-ipn/` | IPN + update `status=paid` |
-| `js/orders.js` | `startNetopiaPayment()` |
-| `js/checkout.js` | Selector 50%/100% + redirect |
+| `supabase/functions/netopia-confirm/` | Poll `/operation/status` + update (fallback IPN) |
+| `js/orders.js` | `startNetopiaPayment()`, `confirmNetopiaPayment()` |
+| `js/checkout.js` | Selector 50%/100% + redirect + confirm la return |
 
 ## 1. Migrare SQL
 
@@ -38,14 +39,16 @@ Din folderul `AI Projects/output/biocake` (cu [Supabase CLI](https://supabase.co
 ```bash
 supabase functions deploy netopia-start --no-verify-jwt
 supabase functions deploy netopia-ipn --no-verify-jwt
+supabase functions deploy netopia-confirm --no-verify-jwt
 ```
 
-- `netopia-start`: `--no-verify-jwt` ca storefront-ul (anon) să poată apela cu apikey.
+- `netopia-start` / `netopia-confirm`: `--no-verify-jwt` ca storefront/admin (anon) să poată apela cu apikey.
 - `netopia-ipn`: `--no-verify-jwt` obligatoriu — Netopia nu trimite JWT Supabase; autentificarea e prin `Verification-token`.
 
 URL-uri rezultate:
 - Start: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-start`
 - IPN: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-ipn`
+- Confirm: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm`
 
 În panoul Netopia, `notifyUrl` este setat automat de `netopia-start` la IPN-ul de mai sus.
 
@@ -53,8 +56,8 @@ URL-uri rezultate:
 
 1. Carduri de test din documentația Netopia sandbox.
 2. Plasează o comandă pe site → alege 50% sau 100% → redirect Netopia.
-3. După plată → revenire `/?paid=1&order=…` + IPN marchează comanda `paid` în admin.
-4. Verifică în admin: rândul „Plată: Plătită · Avans 50% / Integral 100%”.
+3. După plată → revenire `/?paid=1&order=…` + `netopia-confirm` (și IPN) marchează comanda `paid`.
+4. Verifică în admin: „Plată: Plătită”. Dacă rămâne „În curs” → buton **Verifică plata**.
 
 ## 5. Live
 
@@ -73,5 +76,5 @@ URL-uri rezultate:
 
 - **„Netopia nu este configurat”** → lipsesc secrets.
 - **„Nu am primit URL de plată”** → verifică API key / POS / răspuns în logs Edge Function.
-- **IPN fail / comanda rămâne started** → verifică `NETOPIA_PUBLIC_KEY` (PEM complet) și header `Verification-token`.
-- **CORS** → `netopia-start` trimite `Access-Control-Allow-Origin: *`.
+- **IPN fail / comanda rămâne started** → verifică `NETOPIA_PUBLIC_KEY` (PEM/cert complet). Folosește **Verifică plata** în admin sau apelează `netopia-confirm`.
+- **CORS** → `netopia-start` / `netopia-confirm` trimit `Access-Control-Allow-Origin: *`.

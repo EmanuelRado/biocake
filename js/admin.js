@@ -369,6 +369,12 @@ function _renderOrders() {
             deleteOrder(btn.dataset.orderId);
         });
     });
+
+    listEl.querySelectorAll('.btn-verify-pay').forEach(btn => {
+        btn.addEventListener('click', () => {
+            verifyNetopiaPayment(btn.dataset.orderId, btn);
+        });
+    });
 }
 
 function _renderOrderCard(order) {
@@ -466,6 +472,9 @@ function _renderOrderCard(order) {
             ? `<button class="btn-advance${nextSt === 'delivered' ? ' btn-advance-outline' : ''}" data-order-id="${order.id}" data-next-status="${nextSt}">${NEXT_LABEL[order.status]}</button>`
             : `<span class="delivered-final">${icon('check')} Finalizată</span>`
         }
+        ${order.payment_status === 'started' || order.payment_status === 'none'
+            ? `<button type="button" class="btn-verify-pay btn-advance-outline" data-order-id="${order.id}">Verifică plata</button>`
+            : ''}
         <a href="https://wa.me/${waPhone}?text=${waText}"
            target="_blank" rel="noopener" class="btn-wa" aria-label="Contactează pe WhatsApp">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -534,6 +543,62 @@ async function advanceOrderStatus(orderId, newStatus) {
     const order = _orders.find(o => o.id === orderId);
     if (order) order.status = newStatus;
     _renderOrders();
+}
+
+/** Interogă Netopia (status API) și marchează comanda plătită dacă e confirmată. */
+async function verifyNetopiaPayment(orderId, btn) {
+    if (!orderId) return;
+    const card = document.querySelector(`.order-card[data-id="${orderId}"]`);
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Verific…';
+    }
+    if (card) card.classList.add('updating');
+
+    try {
+        const anon = 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
+        const res = await fetch(
+            'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${anon}`,
+                    apikey: anon,
+                },
+                body: JSON.stringify({ orderId }),
+            },
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || `Eroare ${res.status}`);
+        }
+
+        const order = _orders.find(o => o.id === orderId);
+        if (order) {
+            if (data.payment_status) order.payment_status = data.payment_status;
+            if (data.status) order.status = data.status;
+            if (data.amount != null) order.amount_paid = data.amount;
+            if (data.confirmed || data.payment_status === 'paid') {
+                order.payment_status = 'paid';
+                order.status = 'paid';
+            }
+        }
+
+        if (data.confirmed || data.payment_status === 'paid' || data.alreadyPaid) {
+            // ok — realtime / re-render
+        } else {
+            alert(`Plata nu e încă confirmată la Netopia (status: ${data.ntpStatus ?? data.payment_status ?? 'necunoscut'}).`);
+        }
+        _renderOrders();
+    } catch (err) {
+        alert('Nu am putut verifica plata:\n' + (err.message || err));
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Verifică plata';
+        }
+        if (card) card.classList.remove('updating');
+    }
 }
 
 async function deleteOrder(orderId) {

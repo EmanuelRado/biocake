@@ -18,15 +18,16 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const API_KEY = Deno.env.get('NETOPIA_API_KEY') ?? '';
-const POS_SIGNATURE = Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '';
+const API_KEY = (Deno.env.get('NETOPIA_API_KEY') ?? '').trim();
+const POS_SIGNATURE = (Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '').trim();
 const IS_LIVE = (Deno.env.get('NETOPIA_IS_LIVE') ?? 'false').toLowerCase() === 'true';
 const SITE_URL = (Deno.env.get('SITE_URL') ?? 'https://biocake.ro').replace(/\/$/, '');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 
+// URL-uri oficiale din SDK Netopia (composer BaseHttpClient)
 const START_URL = IS_LIVE
-  ? 'https://secure.netopia-payments.com/payment/card/start'
-  : 'https://secure.sandbox.netopia-payments.com/payment/card/start';
+  ? 'https://secure.netopia-payments.com/api/payment/card/start'
+  : 'https://secure-sandbox.netopia-payments.com/payment/card/start';
 
 const supabase = createClient(
   SUPABASE_URL,
@@ -180,23 +181,36 @@ Deno.serve(async (req) => {
     });
 
     const netopiaJson = await netopiaRes.json().catch(() => ({}));
-    if (!netopiaRes.ok) {
+    // Răspuns Netopia: { payment: { paymentURL, ntpID }, error: { code: "101", ... } }
+    // Cod 101 = redirect la pagina de plată (succes pentru hosted page).
+    const errCode = String(netopiaJson?.error?.code ?? '');
+    const paymentUrl =
+      netopiaJson?.payment?.paymentURL ||
+      netopiaJson?.data?.payment?.paymentURL ||
+      netopiaJson?.customerAction?.url ||
+      netopiaJson?.data?.customerAction?.url ||
+      null;
+    const ntpID =
+      netopiaJson?.payment?.ntpID ??
+      netopiaJson?.data?.payment?.ntpID ??
+      null;
+
+    const isRedirectOk = errCode === '101' && !!paymentUrl;
+    if (!netopiaRes.ok && !isRedirectOk) {
       console.error('[netopia-start] HTTP', netopiaRes.status, netopiaJson);
+      const hint = netopiaRes.status === 401
+        ? ' (401 Unauthorized: verifică NETOPIA_API_KEY generat în sandbox + NETOPIA_POS_SIGNATURE exactă + NETOPIA_IS_LIVE=false)'
+        : '';
       return json({
-        error: 'Netopia a refuzat inițierea plății',
+        error: `Netopia a refuzat inițierea plății${hint}`,
         details: netopiaJson,
+        status: netopiaRes.status,
+        endpoint: START_URL,
+        isLive: IS_LIVE,
       }, 502);
     }
 
-    const paymentUrl =
-      netopiaJson?.data?.payment?.paymentURL ||
-      netopiaJson?.data?.customerAction?.url ||
-      null;
-
-    const ntpID = netopiaJson?.data?.payment?.ntpID ?? null;
-
     if (!paymentUrl) {
-      // error code 101 = redirect to payment page — URL should still be present
       console.error('[netopia-start] no paymentURL', netopiaJson);
       return json({
         error: 'Nu am primit URL de plată de la Netopia',

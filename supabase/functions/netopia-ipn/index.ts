@@ -4,14 +4,16 @@
 //
 //  Secrets:
 //    NETOPIA_POS_SIGNATURE
-//    NETOPIA_PUBLIC_KEY     (PEM RSA public key)
+//    NETOPIA_PUBLIC_KEY     (PEM RSA public key SAU certificat)
 //  SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (auto)
 // ============================================================
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as jose from 'npm:jose@5';
 
-const POS_SIGNATURE = Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '';
-const PUBLIC_KEY_PEM = (Deno.env.get('NETOPIA_PUBLIC_KEY') ?? '').replace(/\\n/g, '\n');
+const POS_SIGNATURE = (Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '').trim();
+const PUBLIC_KEY_PEM = (Deno.env.get('NETOPIA_PUBLIC_KEY') ?? '')
+  .replace(/\\n/g, '\n')
+  .trim();
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -66,6 +68,26 @@ async function sha512Base64(raw: string): Promise<string> {
   return btoa(bin);
 }
 
+async function importPublicKey(pem: string) {
+  const normalized = pem.includes('BEGIN')
+    ? pem
+    : `-----BEGIN PUBLIC KEY-----\n${pem}\n-----END PUBLIC KEY-----`;
+
+  if (normalized.includes('BEGIN CERTIFICATE')) {
+    return jose.importX509(normalized, 'RS512');
+  }
+  try {
+    return await jose.importSPKI(normalized, 'RS512');
+  } catch (e) {
+    // Uneori panoul dă CERTIFICATE fără marker clar după paste
+    try {
+      return await jose.importX509(normalized, 'RS512');
+    } catch {
+      throw e;
+    }
+  }
+}
+
 async function verifyToken(verificationToken: string, rawBody: string) {
   if (!PUBLIC_KEY_PEM) {
     throw new Error('NETOPIA_PUBLIC_KEY lipsește');
@@ -74,7 +96,7 @@ async function verifyToken(verificationToken: string, rawBody: string) {
     throw new Error('NETOPIA_POS_SIGNATURE lipsește');
   }
 
-  const key = await jose.importSPKI(PUBLIC_KEY_PEM, 'RS512');
+  const key = await importPublicKey(PUBLIC_KEY_PEM);
   const { payload } = await jose.jwtVerify(verificationToken, key, {
     algorithms: ['RS512', 'RS256'],
   });
@@ -84,8 +106,8 @@ async function verifyToken(verificationToken: string, rawBody: string) {
   }
 
   const aud = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
-  if (aud !== POS_SIGNATURE) {
-    throw new Error('Audience (POS) invalid');
+  if (String(aud) !== POS_SIGNATURE) {
+    throw new Error(`Audience (POS) invalid: got ${aud}`);
   }
 
   const expected = await sha512Base64(rawBody);
@@ -130,6 +152,11 @@ Deno.serve(async (req) => {
     req.headers.get('verification-token') ||
     '';
 
+  console.log('[netopia-ipn] hit', {
+    hasToken: !!verificationToken,
+    bodyLen: rawBody.length,
+  });
+
   try {
     if (!verificationToken) {
       return ipnFail('Missing Verification-token', 0x10000102);
@@ -148,6 +175,8 @@ Deno.serve(async (req) => {
     if (!orderID || Number.isNaN(ntpStatus)) {
       return ipnFail('IPN payload invalid');
     }
+
+    console.log('[netopia-ipn] verified', { orderID, ntpStatus, ntpID });
 
     const mapped = mapPaymentStatus(ntpStatus);
     const patch: Record<string, unknown> = {
@@ -169,7 +198,6 @@ Deno.serve(async (req) => {
 
     if (findErr) throw findErr;
     if (!existing) {
-      // încearcă pe netopia_order_id
       const { data: byNtp, error: e2 } = await supabase
         .from('orders')
         .select('id, payment_status, status')
