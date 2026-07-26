@@ -339,6 +339,47 @@ async function loadOrders() {
 
     _orders = data || [];
     _renderOrders();
+    _autoVerifyStartedPayments();
+}
+
+/** Dacă IPN-ul întârzie, sincronizează din Netopia comenzile „În curs”. */
+async function _autoVerifyStartedPayments() {
+    const pending = (_orders || []).filter(
+        o => o.payment_status === 'started' && o.netopia_ntp_id,
+    );
+    if (!pending.length) return;
+
+    const anon = 'sb_publishable_BKtT3xvutqKDc5eZicj2cg_mLogkvTU';
+    let changed = false;
+
+    for (const order of pending) {
+        try {
+            const res = await fetch(
+                'https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${anon}`,
+                        apikey: anon,
+                    },
+                    body: JSON.stringify({ orderId: order.id }),
+                },
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) continue;
+            if (data.confirmed || data.payment_status === 'paid' || data.alreadyPaid) {
+                order.payment_status = 'paid';
+                order.status = 'paid';
+                if (data.amount != null) order.amount_paid = data.amount;
+                changed = true;
+            }
+        } catch (err) {
+            console.warn('[admin] autoVerify', order.id, err);
+        }
+    }
+
+    if (changed) _renderOrders();
 }
 
 function _renderOrders() {

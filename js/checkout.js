@@ -794,17 +794,31 @@ function handlePaymentReturn() {
         if (o.time) state.fd.time = o.time;
     };
 
+    // Confirmă plata (IPN poate întârzia). Retry: Netopia status uneori e lag după redirect.
     if (typeof confirmNetopiaPayment === 'function') {
-        confirmNetopiaPayment(orderId)
-            .then((r) => {
-                applyOrder(r.order);
-                if (r.confirmed || r.alreadyPaid) state.paidConfirmed = true;
-                else if (!paidHint) state.paidConfirmed = false;
-                show();
-            })
-            .catch((err) => {
-                console.warn('[checkout] confirmNetopiaPayment', err);
-            });
+        const tryConfirm = (attempt) => {
+            confirmNetopiaPayment(orderId)
+                .then((r) => {
+                    applyOrder(r.order);
+                    if (r.confirmed || r.alreadyPaid) {
+                        state.paidConfirmed = true;
+                        show();
+                        return;
+                    }
+                    if (!paidHint) state.paidConfirmed = false;
+                    show();
+                    if (attempt < 3) {
+                        setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
+                    }
+                })
+                .catch((err) => {
+                    console.warn('[checkout] confirmNetopiaPayment', attempt, err);
+                    if (attempt < 3) {
+                        setTimeout(() => tryConfirm(attempt + 1), attempt * 2000);
+                    }
+                });
+        };
+        tryConfirm(1);
     }
 
     try { sessionStorage.removeItem('biocake_last_order'); } catch (_) { /* ignore */ }
