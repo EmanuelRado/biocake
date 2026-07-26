@@ -27,9 +27,10 @@ python -m http.server 8080
 2. Checkout: alege **avans 50%** sau **integral 100%**.
 3. Submit → RPC **`place_order`** (prețuri din DB).
 4. Edge Function **`netopia-start`** → redirect Netopia.
-5. IPN **`netopia-ipn`** → `status=paid`.
+5. IPN **`netopia-ipn`** (sau **`netopia-confirm`**) → `status=paid`.
+6. **`send-order-paid-email`** → email Resend de confirmare (o singură dată).
 
-Setup plăți: vezi **`NETOPIA.md`**.
+Setup plăți + email: vezi **`NETOPIA.md`**.
 
 Nu insera direct în `orders` / `order_items` din client.
 

@@ -87,11 +87,10 @@ function _formHTML(zone, minDate) {
                            placeholder="07xx xxx xxx" autocomplete="tel" required>
                 </div>
                 <div class="co-field">
-                    <label class="co-label" for="co-email">
-                        Email <span class="co-optional">(opțional)</span>
-                    </label>
+                    <label class="co-label" for="co-email">Email *</label>
                     <input class="co-input" type="email" id="co-email" name="email"
-                           placeholder="email@exemplu.ro" autocomplete="email">
+                           placeholder="email@exemplu.ro" autocomplete="email" required>
+                    <p class="co-hint">Îți trimitem confirmarea după plată</p>
                 </div>
             </div>
         </fieldset>
@@ -300,7 +299,7 @@ function _getFormData() {
     return {
         name:    (fd.get('name')    || '').trim(),
         phone:   (fd.get('phone')   || '').replace(/[\s\-\(\)]/g, ''),
-        email:   (fd.get('email')   || '').trim() || null,
+        email:   (fd.get('email')   || '').trim(),
         zone:    fd.get('zone'),
         date:    fd.get('date'),
         time:    fd.get('time'),
@@ -318,6 +317,9 @@ function _validate(fd) {
 
     if (!fd.phone || !/^(07|02|03)\d{8}$/.test(fd.phone))
         errs.push('Numărul de telefon nu este valid. Format: 07xx xxx xxx');
+
+    if (!fd.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.email))
+        errs.push('Email-ul este obligatoriu (îți trimitem confirmarea după plată).');
 
     if (!fd.zone)
         errs.push('Selectează zona de livrare (București sau Ilfov).');
@@ -513,7 +515,7 @@ function _showSuccess({ order, total, advanceDue, payMode, paidConfirmed }, fd) 
         <p class="co-success-note">
             Livrare programată: <strong>${_formatDateRo(fd.date)} · ${fd.time}</strong><br>
             ${paidConfirmed
-                ? 'Mulțumim! Confirmăm comanda și te contactăm dacă e nevoie de detalii.'
+                ? 'Mulțumim! Ți-am trimis confirmarea pe email. Te contactăm dacă e nevoie de detalii.'
                 : 'Dacă ai finalizat plata pe Netopia, confirmarea poate dura câteva momente.'}
         </p>
 

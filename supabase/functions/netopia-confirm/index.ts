@@ -63,6 +63,23 @@ function mapPaymentStatus(ntpStatus: number): {
   return { payment_status: 'started', order_status: null };
 }
 
+/** Fire-and-forget — nu bloca răspunsul către client. */
+function triggerPaidEmail(orderId: string) {
+  const base = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!base || !key || !orderId) return;
+
+  fetch(`${base}/functions/v1/send-order-paid-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+      'x-email-hook-secret': Deno.env.get('EMAIL_HOOK_SECRET') ?? '',
+    },
+    body: JSON.stringify({ orderId }),
+  }).catch((e) => console.error('[netopia-confirm] email hook', e));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
@@ -102,6 +119,7 @@ Deno.serve(async (req) => {
     };
 
     if (order.payment_status === 'paid' && order.status === 'paid') {
+      triggerPaidEmail(order.id);
       return json({
         ok: true,
         alreadyPaid: true,
@@ -181,6 +199,8 @@ Deno.serve(async (req) => {
       .eq('id', order.id);
 
     if (updErr) throw updErr;
+
+    if (mapped.payment_status === 'paid') triggerPaidEmail(order.id);
 
     return json({
       ok: true,

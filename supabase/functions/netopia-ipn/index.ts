@@ -137,6 +137,23 @@ function mapPaymentStatus(ntpStatus: number): {
   return { payment_status: 'started', order_status: null };
 }
 
+/** Fire-and-forget — nu bloca răspunsul IPN către Netopia. */
+function triggerPaidEmail(orderId: string) {
+  const base = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!base || !key || !orderId) return;
+
+  fetch(`${base}/functions/v1/send-order-paid-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+      'x-email-hook-secret': Deno.env.get('EMAIL_HOOK_SECRET') ?? '',
+    },
+    body: JSON.stringify({ orderId }),
+  }).catch((e) => console.error('[netopia-ipn] email hook', e));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { status: 200 });
@@ -201,14 +218,17 @@ Deno.serve(async (req) => {
         return ipnFail('Order not found');
       }
       if (byNtp.payment_status === 'paid') {
+        if (mapped.payment_status === 'paid') triggerPaidEmail(byNtp.id);
         return ipnOk('already paid', ntpStatus);
       }
       const { error: upd } = await supabase.from('orders').update(patch).eq('id', byNtp.id);
       if (upd) throw upd;
+      if (mapped.payment_status === 'paid') triggerPaidEmail(byNtp.id);
       return ipnOk('payment updated', ntpStatus);
     }
 
     if (existing.payment_status === 'paid' && existing.status === 'paid') {
+      if (mapped.payment_status === 'paid') triggerPaidEmail(existing.id);
       return ipnOk('already paid', ntpStatus);
     }
 
@@ -218,6 +238,8 @@ Deno.serve(async (req) => {
       .eq('id', existing.id);
 
     if (updErr) throw updErr;
+
+    if (mapped.payment_status === 'paid') triggerPaidEmail(existing.id);
 
     const msg =
       mapped.payment_status === 'paid'

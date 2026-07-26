@@ -7,11 +7,13 @@ Integrare **API v2** (hosted page, `instrument: null`) via Supabase Edge Functio
 | Fișier | Rol |
 |--------|-----|
 | `supabase-netopia.sql` | Coloane plată pe `orders` |
+| `supabase-order-email.sql` | Coloană `confirmation_email_sent_at` (idempotență email) |
 | `supabase/functions/netopia-start/` | Pornește plata, returnează `paymentUrl` |
-| `supabase/functions/netopia-ipn/` | IPN + update `status=paid` |
-| `supabase/functions/netopia-confirm/` | Poll `/operation/status` + update (fallback IPN) |
+| `supabase/functions/netopia-ipn/` | IPN + update `status=paid` + hook email |
+| `supabase/functions/netopia-confirm/` | Poll `/operation/status` + update (fallback IPN) + hook email |
+| `supabase/functions/send-order-paid-email/` | Email Resend după plată (o singură dată) |
 | `js/orders.js` | `startNetopiaPayment()`, `confirmNetopiaPayment()` |
-| `js/checkout.js` | Selector 50%/100% + redirect + confirm la return |
+| `js/checkout.js` | Selector 50%/100% + email obligatoriu + redirect + confirm |
 
 ## 1. Migrare SQL
 
@@ -40,15 +42,18 @@ Din folderul `AI Projects/output/biocake` (cu [Supabase CLI](https://supabase.co
 supabase functions deploy netopia-start --no-verify-jwt
 supabase functions deploy netopia-ipn --no-verify-jwt
 supabase functions deploy netopia-confirm --no-verify-jwt
+supabase functions deploy send-order-paid-email --no-verify-jwt
 ```
 
 - `netopia-start` / `netopia-confirm`: `--no-verify-jwt` ca storefront/admin (anon) să poată apela cu apikey.
 - `netopia-ipn`: `--no-verify-jwt` obligatoriu — Netopia nu trimite JWT Supabase; autentificarea e prin `Verification-token`.
+- `send-order-paid-email`: `--no-verify-jwt` — apelată doar din IPN/confirm cu `EMAIL_HOOK_SECRET` + service role (nu e webhook Resend).
 
 URL-uri rezultate:
 - Start: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-start`
 - IPN: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-ipn`
 - Confirm: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/netopia-confirm`
+- Email: `https://trwnnbszsgmxezkrpued.supabase.co/functions/v1/send-order-paid-email`
 
 În panoul Netopia, `notifyUrl` este setat automat de `netopia-start` la IPN-ul de mai sus.
 
@@ -72,9 +77,46 @@ URL-uri rezultate:
 - IPN success → `status=paid` + `payment_status=paid` (sare peste `confirmed`)
 - Admin: `paid` → `delivered`
 
+## 6. Email confirmare după plată (Resend)
+
+Trimis **o singură dată** după `payment_status = paid` (din `netopia-ipn` sau `netopia-confirm`). Nu e nevoie de webhook Resend.
+
+### Setup Resend (manual)
+
+1. Resend → **Domains** → adaugă `biocake.ro` → DNS SPF/DKIM la registrar → status **Verified**.
+2. **API Keys** → creează cheie.
+3. Până domeniul e verificat, Resend acceptă doar destinatar = emailul contului Resend (util pentru test).
+
+### SQL
+
+Rulează `supabase-order-email.sql` (coloana `confirmation_email_sent_at`).
+
+### Secrets suplimentare
+
+| Secret | Valoare |
+|--------|---------|
+| `RESEND_API_KEY` | cheia din Resend |
+| `RESEND_FROM` | `BioCake <comenzi@biocake.ro>` (domeniu verificat) |
+| `RESEND_REPLY_TO` | opțional — default `contact@biocake.ro` |
+| `EMAIL_HOOK_SECRET` | string lung aleator (header `x-email-hook-secret` între EF-uri) |
+
+Exemplu set secrets (CLI, din folderul proiectului):
+
+```bash
+supabase secrets set RESEND_API_KEY="re_..." RESEND_FROM="BioCake <comenzi@biocake.ro>" EMAIL_HOOK_SECRET="..."
+```
+
+### Test
+
+1. Comandă sandbox cu email real → plată card test → `paid` în admin.
+2. Client primește email o singură dată.
+3. „Verifică plata” din nou → fără al doilea email (`confirmation_email_sent_at`).
+4. Fără `customer_email` → skip (200), IPN rămâne OK.
+
 ## Troubleshooting
 
 - **„Netopia nu este configurat”** → lipsesc secrets.
 - **„Nu am primit URL de plată”** → verifică API key / POS / răspuns în logs Edge Function.
 - **IPN fail / comanda rămâne started** → verifică `NETOPIA_PUBLIC_KEY` (PEM/cert complet). Folosește **Verifică plata** în admin sau apelează `netopia-confirm`.
 - **CORS** → `netopia-start` / `netopia-confirm` trimit `Access-Control-Allow-Origin: *`.
+- **Email nu vine** → `RESEND_API_KEY` / domeniu neverificat / logs `send-order-paid-email`. Idempotență: coloana `confirmation_email_sent_at`.

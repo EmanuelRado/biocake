@@ -2826,6 +2826,13 @@ em { font-family: var(--font-serif); font-style: italic; }
     font-size: 0.75rem;
 }
 
+.co-hint {
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
 .co-input,
 .co-textarea {
     width: 100%;
