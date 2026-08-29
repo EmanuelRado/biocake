@@ -92,7 +92,7 @@ SPA static: HTML + CSS + Vanilla JS. Repo: `https://github.com/EmanuelRado/bioca
 | `js/app.js` | Init + aplică telefon din config pe footer |
 
 ### Admin PWA
-*   `admin.html` / `css/admin.css` / `js/admin.js` / `sw.js` (cache `biocake-admin-v8`) / `manifest.webmanifest`
+*   `admin.html` / `css/admin.css` / `js/admin.js` / `sw.js` (cache `biocake-admin-v10`) / `manifest.webmanifest`
 *   Auth persist; produse CRUD + upload Storage + reorder imagini; `piece_grams` pe unitate buc
 *   Comenzi: realtime, filtre, status, delete, WhatsApp client
 *   Card comandă compact (nume, dată livrare, valoare, butoane); adresă / telefon / plată / produse la expand (tap pe card sau chevron)

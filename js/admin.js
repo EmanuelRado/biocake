@@ -451,7 +451,10 @@ function _setOrderExpanded(orderId, expanded) {
     card.classList.toggle('is-expanded', expanded);
 
     const details = card.querySelector('.order-details');
-    if (details) details.hidden = !expanded;
+    if (details) {
+        details.setAttribute('aria-hidden', String(!expanded));
+        details.inert = !expanded;
+    }
 
     const btn = card.querySelector('.order-expand-btn');
     if (btn) {
@@ -552,14 +555,16 @@ function _renderOrderCard(order) {
         <div class="meta-row">${icon('calendar')} <strong>${whenStr}</strong> · ${zone}</div>
     </div>
 
-    <div class="order-details" id="${detailsId}" ${expanded ? '' : 'hidden'}>
-        <div class="order-meta">
-            <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
-            <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
-            ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
-            ${payStatusLabel ? `<div class="meta-row">${icon('check')} Plată: <strong>${_esc(payStatusLabel)}</strong>${payModeLabel ? ` · ${_esc(payModeLabel)}` : ''}${amountPaid ? ` · ${_esc(amountPaid)}` : ''}</div>` : ''}
+    <div class="order-details" id="${detailsId}" aria-hidden="${expanded ? 'false' : 'true'}" ${expanded ? '' : 'inert'}>
+        <div class="order-details-inner">
+            <div class="order-meta">
+                <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
+                <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
+                ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
+                ${payStatusLabel ? `<div class="meta-row">${icon('check')} Plată: <strong>${_esc(payStatusLabel)}</strong>${payModeLabel ? ` · ${_esc(payModeLabel)}` : ''}${amountPaid ? ` · ${_esc(amountPaid)}` : ''}</div>` : ''}
+            </div>
+            <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
         </div>
-        <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
     </div>
 
     <div class="order-totals">
