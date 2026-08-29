@@ -8,6 +8,7 @@ let _orders          = [];
 let _products        = [];
 let _currentFilter   = 'all';
 let _realtimeChannel = null;
+const _expandedOrderIds = new Set();
 
 const STATUS_LABEL = {
     pending:   'În Așteptare',
@@ -33,6 +34,7 @@ const ICON_PATHS = {
     gift:      '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
     leaf:      '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
     clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+    chevron:   '<path d="m6 9 6 6 6-6"/>',
 };
 function icon(name, size = 16) {
     const p = ICON_PATHS[name];
@@ -418,6 +420,47 @@ function _renderOrders() {
             verifyNetopiaPayment(btn.dataset.orderId, btn);
         });
     });
+
+    listEl.querySelectorAll('.order-expand-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            _toggleOrderExpanded(btn.closest('.order-card')?.dataset.id);
+        });
+    });
+
+    listEl.querySelectorAll('.order-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('a, button, input, .order-actions')) return;
+            _toggleOrderExpanded(card.dataset.id);
+        });
+    });
+}
+
+function _toggleOrderExpanded(orderId) {
+    if (!orderId) return;
+    _setOrderExpanded(orderId, !_expandedOrderIds.has(orderId));
+}
+
+function _setOrderExpanded(orderId, expanded) {
+    if (expanded) _expandedOrderIds.add(orderId);
+    else _expandedOrderIds.delete(orderId);
+
+    const card = document.querySelector(`.order-card[data-id="${orderId}"]`);
+    if (!card) return;
+
+    card.classList.toggle('is-expanded', expanded);
+
+    const details = card.querySelector('.order-details');
+    if (details) details.hidden = !expanded;
+
+    const btn = card.querySelector('.order-expand-btn');
+    if (btn) {
+        btn.setAttribute('aria-expanded', String(expanded));
+        btn.setAttribute(
+            'aria-label',
+            expanded ? 'Ascunde detaliile comenzii' : 'Arată detaliile comenzii',
+        );
+    }
 }
 
 function _renderOrderCard(order) {
@@ -480,30 +523,44 @@ function _renderOrderCard(order) {
     );
 
     const nextSt = NEXT_STATUS[order.status];
+    const expanded = _expandedOrderIds.has(order.id);
+    const detailsId = `order-details-${order.id}`;
 
     return `
-<div class="order-card status-${order.status}" data-id="${order.id}">
+<div class="order-card status-${order.status}${expanded ? ' is-expanded' : ''}" data-id="${order.id}">
     <div class="order-header">
         <div class="order-name-row">
             ${urgencyBadge}
             <span class="order-customer">${_esc(order.customer_name)}</span>
             <span class="order-id">#${shortId}</span>
         </div>
-        <span class="status-badge ${order.status}">
-            <span class="status-dot ${order.status}" aria-hidden="true"></span>
-            ${STATUS_LABEL[order.status] || order.status}
-        </span>
+        <div class="order-header-end">
+            <span class="status-badge ${order.status}">
+                <span class="status-dot ${order.status}" aria-hidden="true"></span>
+                ${STATUS_LABEL[order.status] || order.status}
+            </span>
+            <button type="button" class="order-expand-btn"
+                    aria-expanded="${expanded}"
+                    aria-controls="${detailsId}"
+                    aria-label="${expanded ? 'Ascunde detaliile comenzii' : 'Arată detaliile comenzii'}">
+                ${icon('chevron', 18)}
+            </button>
+        </div>
     </div>
 
     <div class="order-meta">
         <div class="meta-row">${icon('calendar')} <strong>${whenStr}</strong> · ${zone}</div>
-        <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
-        <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
-        ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
-        ${payStatusLabel ? `<div class="meta-row">${icon('check')} Plată: <strong>${_esc(payStatusLabel)}</strong>${payModeLabel ? ` · ${_esc(payModeLabel)}` : ''}${amountPaid ? ` · ${_esc(amountPaid)}` : ''}</div>` : ''}
     </div>
 
-    <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
+    <div class="order-details" id="${detailsId}" ${expanded ? '' : 'hidden'}>
+        <div class="order-meta">
+            <div class="meta-row">${icon('pin')} ${_esc(order.delivery_address || '—')}</div>
+            <div class="meta-row">${icon('phone')} <a href="tel:${_esc(order.customer_phone)}" class="phone-link">${_esc(order.customer_phone)}</a></div>
+            ${order.notes ? `<div class="meta-row notes">${icon('message')} ${_esc(order.notes)}</div>` : ''}
+            ${payStatusLabel ? `<div class="meta-row">${icon('check')} Plată: <strong>${_esc(payStatusLabel)}</strong>${payModeLabel ? ` · ${_esc(payModeLabel)}` : ''}${amountPaid ? ` · ${_esc(amountPaid)}` : ''}</div>` : ''}
+        </div>
+        <div class="order-items">${items || '<span class="item-pill">—</span>'}</div>
+    </div>
 
     <div class="order-totals">
         <span>Total: <strong>${total}</strong></span>

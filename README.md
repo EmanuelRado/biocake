@@ -51,7 +51,7 @@ Footer + checkout citesc de aici.
 ## Panou Administrator (PWA)
 
 - Login Supabase Auth (`admin@biocake.ro`)
-- Comenzi: realtime, status, delete, WhatsApp
+- Comenzi: realtime, status, delete, WhatsApp; card compact + detalii la expand
 - Produse: CRUD, imagini Storage, `piece_grams` pentru buc, greutăți kg min/step/max
 - Push: clopoțel → VAPID; webhook pe INSERT orders
 

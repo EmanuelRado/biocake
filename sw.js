@@ -2,7 +2,7 @@
  * BioCake Admin — Service Worker
  * PWA installabilă: shell offline + notificări push la comandă nouă.
  */
-const CACHE = 'biocake-admin-v7';
+const CACHE = 'biocake-admin-v8';
 const SHELL = [
     '/admin.html',
     '/css/admin.css',

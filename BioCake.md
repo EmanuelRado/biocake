@@ -4,7 +4,7 @@ client: BioCake
 type: Magazin Online Complet
 status: "🟡 În lucru (Etapa 6 — post-audit Ziua 1–2)"
 date_created: 2026-07-03
-date_modified: 2026-07-19
+date_modified: 2026-08-29
 limba: RO
 locatie: București, România
 telefon: "+40 700 000 000"  # Actualizează în js/config.js + aici când ai numărul real
@@ -125,7 +125,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **Detalii Livrare**: Comandă min. 48h în avans. București (20 RON, gratuită >250 RON), Ilfov (40 RON, gratuită >600 RON).
 - [x] **Design System**: Etapa 1 finalizată — HTML/CSS/JS complet, premium redesign aplicat.
 - [x] **Concept Office Box**: Definit — 6/12/18/24 buc, mix sau sortiment unic, tradiție românească de birou.
-- [x] **Panou Admin**: `admin.html` — PWA instalabilă, comenzi realtime, editare/creare/ștergere produse, notificări push la comandă nouă.
+- [x] **Panou Admin**: `admin.html` — PWA instalabilă, comenzi realtime (card compact + detalii la expand), editare/creare/ștergere produse, notificări push la comandă nouă.
 - [x] **PWA Admin**: manifest, service worker, iconițe, banner instalare, abonare push (Android + iOS 16.4+ instalat pe ecran).
 - [x] **Deployment staging**: GitHub (`EmanuelRado/biocake`, privat) → Netlify cu auto-deploy din `main`.
 - [x] **Migrare SQL `max_qty`**: coloana există în DB; legată în `admin.js` (SELECT + UPDATE) ✅ 2026-07-18.
@@ -156,6 +156,7 @@ Pentru a putea dezvolta platforma la potențial maxim, avem nevoie de următoare
 - [x] **SEO / OG / fonts non-blocking / mesaj fără zahăr rafinat** — Ziua 3 (parțial) ✅ 2026-07-22
 - [x] **Netopia Payments (cod)** — checkout 50%/100%, EF start+IPN, SQL — ✅ 2026-07-22 (deploy: vezi [[NETOPIA]])
 - [ ] **Modul Recenzii**: Adăugarea unei secțiuni de recenzii și evaluări din partea clienților pe site. *(Notat pe 18.07.2026)*
+- [ ] **Clarificare Secțiune Office Box**: Îmbunătățirea și clarificarea structurii/prezentării vizuale pentru secțiunea Office Boxes pe site. *(Notat pe 04.08.2026)*
 - [ ] **Deploy Netopia** — SQL + secrets + functions pe Supabase + test sandbox
 - [ ] **Pipeline WebP / resize la upload** — rămâne
 - [ ] **Rate-limit comenzi** pe RPC public

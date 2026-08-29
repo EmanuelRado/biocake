@@ -145,6 +145,7 @@ sequenceDiagram
 
 * Auth persist (`biocake-auth`)
 * Comenzi: realtime, filtre, status, delete, WhatsApp, afișare `payment_status` / `pay_mode`
+* Card comandă compact implicit; detalii (adresă, telefon, plată, produse) la expand
 * Produse: CRUD, Storage upload, reorder, `piece_grams`, greutăți kg
 * PWA: `sw.js`, manifest, iconițe
 

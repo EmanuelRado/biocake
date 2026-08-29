@@ -511,6 +511,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     padding: 18px;
     box-shadow: var(--shadow-xs);
     border: 1px solid var(--border);
+    cursor: pointer;
     transition: transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease), opacity var(--t-base) var(--ease);
 }
 
@@ -546,6 +547,35 @@ em { font-family: var(--font-serif); font-style: italic; }
     gap: 8px;
     margin-bottom: 10px;
 }
+
+.order-header-end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.order-expand-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--choco-light);
+    color: var(--choco);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), transform var(--t-base) var(--ease);
+}
+.order-expand-btn:hover { background: var(--vanilla-dark); }
+.order-expand-btn:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+.order-card.is-expanded .order-expand-btn { transform: rotate(180deg); }
+
+.order-details[hidden] { display: none; }
+.order-card:not(.is-expanded) .order-meta { margin-bottom: 0; }
 
 .order-name-row {
     display: flex;
@@ -664,6 +694,7 @@ em { font-family: var(--font-serif); font-style: italic; }
     display: flex;
     flex-direction: column;
     gap: 8px;
+    cursor: default;
 }
 
 .order-actions-row {
